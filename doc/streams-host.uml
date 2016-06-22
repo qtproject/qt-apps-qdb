@@ -1,0 +1,43 @@
+@startuml
+
+actor User
+
+title Streams from host perspective
+
+Connection -> Transport : send CONNECT 0 0
+Connection <- Transport : receive CONNECT 0 0
+User -> ProcessService : start()
+note right: process to run
+ProcessService -> Connection : createStream(streamCreatedCallback)
+Connection -> Transport : send OPEN 1 0
+Connection <- Transport : receive OK 1 1
+note right: tells the device-side stream ID
+ProcessService <- Connection : streamCreatedCallback()
+create control Stream1
+ProcessService -> Stream1 : write()
+note right: process to run
+Stream1 -> Connection : enqueueMessage()
+Connection -> Transport : send WRITE 1 1
+Connection <- Transport : receive OK 1 1
+Connection <- Transport : receive WRITE 1 1
+note right: block of output
+Stream1 <- Connection : receiveMessage()
+ProcessService <- Stream1 : packetAvailable()
+User <- ProcessService : readyRead()
+User -> ProcessService : read()
+Connection -> Transport : send OK 1 1
+Connection <- Transport : receive WRITE 1 1
+note right: exit code and final block of output
+Connection -> Transport : send OK 1 1
+Stream1 <- Connection : receiveMessage()
+ProcessService <- Stream1 : packetAvailable()
+User <- ProcessService : readyRead()
+User <- ProcessService : finished()
+User -> ProcessService : read()
+User -> ProcessService : exitCode()
+ProcessService -> Stream1 : close()
+Stream1 -> Connection : closeStream()
+destroy Stream1
+Connection <- Transport : send CLOSE 1 1
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+
+title Streams from device perspective
+
+Transport -> Server : receive CONNECT 0 0
+Transport <- Server : send CONNECT 0 0
+Transport -> Server : receive OPEN 1 0 tag
+Server -> createExecutor : createExecutor(stream1, tag)
+note right: Server provides an already opened Stream
+create ProcessExecutor
+createExecutor -> ProcessExecutor : new ProcessExecutor(Stream *stream1)
+Transport <- Server : send OK 1 1
+Transport -> Server : receive WRITE 1 1
+create control Stream1
+Server -> Stream1 : receiveMessage()
+Stream1 -> ProcessExecutor : packetAvailable()
+note right: command to run
+Transport <- Server : send OK 1 1
+create QProcess
+ProcessExecutor -> QProcess : start()
+ProcessExecutor <- QProcess : finished()
+Stream1 <- ProcessExecutor : write()
+note right: return code and command output
+Server <- Stream1 : enqueueMessage()
+Transport <- Server : send WRITE 1 1
+Transport -> Server : receive OK 1 1
+Transport -> Server : receive CLOSE 1 1
+Server -> ProcessExecutor : delete
+destroy ProcessExecutor
+Server -> Stream1 : close()
+destroy Stream1
+
+@enduml
