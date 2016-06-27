@@ -21,6 +21,7 @@
 #include "connection.h"
 
 #include "../utils/make_unique.h"
+#include "protocol/protocol.h"
 #include "protocol/qdbtransport.h"
 #include "service.h"
 
@@ -41,7 +42,12 @@ Connection::Connection(QdbTransport *transport, QObject *parent)
 void Connection::connect()
 {
     Q_ASSERT(m_state == ConnectionState::Disconnected);
-    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0});
+
+    QByteArray versionBuffer{};
+    QDataStream dataStream{&versionBuffer, QIODevice::WriteOnly};
+    dataStream << qdbProtocolVersion;
+
+    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0, versionBuffer});
 }
 
 void Connection::close()
@@ -111,7 +117,10 @@ void Connection::handleMessage()
             resetConnection();
             break;
         }
-        m_state = ConnectionState::Connected;
+        if (checkVersion(message))
+            m_state = ConnectionState::Connected;
+        else
+            m_state = ConnectionState::Disconnected;
         break;
     case ConnectionState::Connected:
         switch (message.command()) {
@@ -241,7 +250,8 @@ void Connection::resetConnection()
     m_state = ConnectionState::Disconnected;
     m_streamRequests.clear();
     m_streams.clear();
-    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0});
+
+    connect();
 }
 
 void Connection::closeStream(StreamId id)
@@ -268,7 +278,7 @@ void Connection::finishCreateStream(StreamId hostId, StreamId deviceId)
     callback(m_streams[hostId].get());
 }
 
-void Connection::handleWrite(QdbMessage message)
+void Connection::handleWrite(const QdbMessage &message)
 {
     if (m_streams.find(message.hostStream()) == m_streams.end()) {
         qWarning() << "Connection received message to non-existing stream" << message.hostStream();
@@ -277,4 +287,21 @@ void Connection::handleWrite(QdbMessage message)
     }
     acknowledge(message.hostStream(), message.deviceStream());
     m_streams[message.hostStream()]->receiveMessage(message);
+}
+
+bool Connection::checkVersion(const QdbMessage &message)
+{
+    Q_ASSERT(message.command() == QdbMessage::Connect);
+    Q_ASSERT(message.data().size() == sizeof(qdbProtocolVersion));
+
+    QDataStream dataStream{message.data()};
+    uint32_t protocolVersion;
+    dataStream >> protocolVersion;
+
+    if (protocolVersion != qdbProtocolVersion) {
+        qCritical() << "Device offered protocol version" << protocolVersion << ", but only version"
+                   << qdbProtocolVersion << "is supported";
+        return false;
+    }
+    return true;
 }

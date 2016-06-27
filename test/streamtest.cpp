@@ -20,6 +20,7 @@
 ******************************************************************************/
 #include "../utils/make_unique.h"
 #include "usb/usbconnection.h"
+#include "protocol/protocol.h"
 #include "protocol/qdbmessage.h"
 #include "protocol/qdbtransport.h"
 #include "protocol/services.h"
@@ -33,6 +34,13 @@ const int testTimeout = 500; // in milliseconds
 class TestCase : public QObject
 {
     Q_OBJECT
+public:
+    TestCase()
+        : m_transport{nullptr}, m_versionBuffer{}, m_phase{0}
+    {
+        QDataStream dataStream{&m_versionBuffer, QIODevice::WriteOnly};
+        dataStream << qdbProtocolVersion;
+    }
 public slots:
     void run()
     {
@@ -51,7 +59,8 @@ signals:
     void passed();
 protected:
     std::unique_ptr<QdbTransport> m_transport;
-    int m_phase = 0;
+    QByteArray m_versionBuffer;
+    int m_phase;
 };
 
 class OpenWriteCloseEchoTest : public TestCase
@@ -62,13 +71,14 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QdbMessage cnxn{QdbMessage::Connect, 0, 0};
+                QdbMessage cnxn{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(cnxn));
                 break;
             }
         case 1: {
                 QdbMessage response = m_transport->receive();
                 QCOMPARE(response.command(), QdbMessage::Connect);
+                QCOMPARE(response.data(), m_versionBuffer);
 
                 QdbMessage open{QdbMessage::Open, m_hostId, 0, tagBuffer(EchoTag)};
                 QVERIFY(m_transport->send(open));
@@ -129,7 +139,7 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QdbMessage connect{QdbMessage::Connect, 0, 0};
+                QdbMessage connect{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(connect));
                 break;
             }
@@ -138,9 +148,9 @@ public slots:
                 QCOMPARE(response.command(), QdbMessage::Connect);
                 QCOMPARE(response.hostStream(), 0u);
                 QCOMPARE(response.deviceStream(), 0u);
-                QCOMPARE(response.data(), QByteArray{});
+                QCOMPARE(response.data(), m_versionBuffer);
 
-                QdbMessage connect{QdbMessage::Connect, 0, 0};
+                QdbMessage connect{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(connect));
                 break;
             }
@@ -149,7 +159,37 @@ public slots:
                 QCOMPARE(response.command(), QdbMessage::Connect);
                 QCOMPARE(response.hostStream(), 0u);
                 QCOMPARE(response.deviceStream(), 0u);
-                QCOMPARE(response.data(), QByteArray{});
+                QCOMPARE(response.data(), m_versionBuffer);
+
+                emit passed();
+                break;
+            }
+        }
+        ++m_phase;
+    }
+};
+
+class ConnectWithUnsupportedVersionTest : public TestCase
+{
+    Q_OBJECT
+public slots:
+    void testPhases() override
+    {
+        switch (m_phase) {
+        case 0: {
+                QByteArray unsupported{};
+                QDataStream dataStream{&unsupported, QIODevice::WriteOnly};
+                dataStream << (qdbProtocolVersion + 1);
+                QdbMessage connect{QdbMessage::Connect, 0, 0, unsupported};
+                QVERIFY(m_transport->send(connect));
+                break;
+            }
+        case 1: {
+                QdbMessage response = m_transport->receive();
+                QCOMPARE(response.command(), QdbMessage::Connect);
+                QCOMPARE(response.hostStream(), 0u);
+                QCOMPARE(response.deviceStream(), 0u);
+                QCOMPARE(response.data(), m_versionBuffer);
 
                 emit passed();
                 break;
@@ -227,7 +267,7 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QdbMessage connect{QdbMessage::Connect, 0, 0};
+                QdbMessage connect{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(connect));
                 break;
             }
@@ -236,7 +276,7 @@ public slots:
                 QCOMPARE(response.command(), QdbMessage::Connect);
                 QCOMPARE(response.hostStream(), 0u);
                 QCOMPARE(response.deviceStream(), 0u);
-                QCOMPARE(response.data(), QByteArray{});
+                QCOMPARE(response.data(), m_versionBuffer);
 
                 // Try to directly write to an unopened stream
                 QdbMessage write{QdbMessage::Write, m_hostId, m_deviceId};
@@ -297,7 +337,7 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QdbMessage cnxn{QdbMessage::Connect, 0, 0};
+                QdbMessage cnxn{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(cnxn));
                 break;
             }
@@ -449,6 +489,12 @@ private slots:
     void doubleClose()
     {
         DoubleCloseTest test;
+        testCase(&test);
+    }
+
+    void connectWithUnsupportedVersion()
+    {
+        ConnectWithUnsupportedVersionTest test;
         testCase(&test);
     }
 

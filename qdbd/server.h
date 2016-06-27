@@ -54,8 +54,9 @@ private:
     void processQueue();
     void handleOpen(StreamId hostId, const QByteArray &tag);
     void resetServer(bool hostConnected);
-    void handleWrite(QdbMessage message);
+    void handleWrite(const QdbMessage &message);
     void closeStream(StreamId id);
+    void checkVersion(const QdbMessage &message);
 
     ServerState m_state;
     std::unordered_map<StreamId, std::unique_ptr<Executor>> m_executors;

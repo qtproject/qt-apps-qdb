@@ -29,5 +29,6 @@ const uint8_t qdbUsbProtocolId = 0x1;
 const int qdbHeaderSize = 4*sizeof(uint32_t);
 const int qdbMessageSize = 16*1024;
 const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
+const uint32_t qdbProtocolVersion = 0;
 
 #endif

@@ -66,7 +66,8 @@ private:
     void resetConnection();
     void closeStream(StreamId id);
     void finishCreateStream(StreamId hostId, StreamId deviceId);
-    void handleWrite(QdbMessage message);
+    void handleWrite(const QdbMessage &message);
+    bool checkVersion(const QdbMessage &message);
 
     ConnectionState m_state;
     QHash<StreamId, StreamCreatedCallback> m_streamRequests;

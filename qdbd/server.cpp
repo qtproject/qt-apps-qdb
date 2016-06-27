@@ -23,6 +23,7 @@
 #include "../utils/make_unique.h"
 #include "createexecutor.h"
 #include "echoexecutor.h"
+#include "protocol/protocol.h"
 #include "protocol/qdbmessage.h"
 #include "protocol/qdbtransport.h"
 #include "stream.h"
@@ -57,12 +58,14 @@ void Server::handleMessage()
             resetServer(false);
             break;
         }
+        checkVersion(message);
         resetServer(true);
         break;
     case ServerState::Connected:
         switch (message.command()) {
         case QdbMessage::Connect:
             qWarning() << "Server received QdbMessage::Connect while already connected. Resetting.";
+            checkVersion(message);
             resetServer(true);
             break;
         case QdbMessage::Open:
@@ -182,10 +185,15 @@ void Server::resetServer(bool hostConnected)
     m_executors.clear();
     m_streams.clear();
     m_state = hostConnected ? ServerState::Connected : ServerState::Disconnected;
-    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0});
+
+    QByteArray buffer{};
+    QDataStream dataStream{&buffer, QIODevice::WriteOnly};
+    dataStream << qdbProtocolVersion;
+
+    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0, buffer});
 }
 
-void Server::handleWrite(QdbMessage message)
+void Server::handleWrite(const QdbMessage &message)
 {
     if (m_streams.find(message.deviceStream()) == m_streams.end()) {
         qWarning() << "Server received message to non-existing stream" << message.deviceStream();
@@ -214,5 +222,20 @@ void Server::closeStream(StreamId id)
                 std::remove_if(m_outgoingMessages.begin(), m_outgoingMessages.end(), messageInStream),
                 m_outgoingMessages.end());
     // Closes are not acknowledged
+}
+
+void Server::checkVersion(const QdbMessage &message)
+{
+    Q_ASSERT(message.command() == QdbMessage::Connect);
+    Q_ASSERT(message.data().size() == sizeof(qdbProtocolVersion));
+
+    QDataStream dataStream{message.data()};
+    uint32_t protocolVersion;
+    dataStream >> protocolVersion;
+
+    if (protocolVersion != qdbProtocolVersion) {
+        qWarning() << "Protocol version" << protocolVersion << "requested, but only version"
+                   << qdbProtocolVersion << "is known";
+    }
 }
 
