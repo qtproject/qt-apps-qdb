@@ -35,10 +35,17 @@
 
 # This is a development script that can run adbd and qdbd simultaneusly on a
 # boot2qt device. The first argument is one of {start,stop,restart} and the rest
-# of the arguments are passed to qdbd.
+# of the arguments are passed to qdbd. The script also sets up an Ethernet/RNDIS
+# function to provide a network interface between the host and the device.
+
+MANUFACTURER="The Qt Company"
+PRODUCT_STRING="Boot2Qt Ethernet/RNDIS connection"
 
 ADBD=/usr/bin/adbd
 DAEMON=/usr/bin/qdbd
+CONFIGFS_PATH=/sys/kernel/config
+
+GADGET_CONFIG=$CONFIGFS_PATH/usb_gadget/g1
 
 . /etc/default/adbd
 
@@ -49,7 +56,24 @@ fi
 case "$1" in
 start)
     if [ "$USE_ETHERNET" = "no" ]; then
-        modprobe g_ffs idVendor=${VENDOR} idProduct=${PRODUCT} iSerialNumber=${SERIAL:0:32} functions=adb,qdb
+        modprobe libcomposite
+        # Gadget configuration
+        mkdir $GADGET_CONFIG
+        echo $VENDOR > $GADGET_CONFIG/idVendor
+        echo $PRODUCT > $GADGET_CONFIG/idProduct
+        mkdir -p $GADGET_CONFIG/strings/0x409
+        echo $MANUFACTURER > $GADGET_CONFIG/strings/0x409/manufacturer
+        echo $PRODUCT_STRING > $GADGET_CONFIG/strings/0x409/product
+        echo ${SERIAL:0:32} > $GADGET_CONFIG/strings/0x409/serialnumber
+        mkdir -p $GADGET_CONFIG/configs/c.1/strings/0x409
+        echo "USB Ethernet, ADB, QDB" > $GADGET_CONFIG/configs/c.1/strings/0x409/configuration
+        mkdir -p $GADGET_CONFIG/functions/rndis.usb0
+        mkdir -p $GADGET_CONFIG/functions/ffs.adb
+        mkdir -p $GADGET_CONFIG/functions/ffs.qdb
+        ln -s $GADGET_CONFIG/functions/rndis.usb0 $GADGET_CONFIG/configs/c.1
+        ln -s $GADGET_CONFIG/functions/ffs.adb $GADGET_CONFIG/configs/c.1
+        ln -s $GADGET_CONFIG/functions/ffs.qdb $GADGET_CONFIG/configs/c.1
+        # Function fs mountpoints
         mkdir -p /dev/usb-ffs
         chmod 770 /dev/usb-ffs
         mkdir -p /dev/usb-ffs/qdb
@@ -62,15 +86,22 @@ start)
     shift
     start-stop-daemon --start --quiet --exec $DAEMON -- $@ &
     start-stop-daemon --start --quiet --exec $ADBD &
+    sleep 1
+    # Initialize gadget with first UDC driver
+    for driverpath in /sys/class/udc/*; do
+        drivername=`basename $driverpath`
+        echo "$drivername" > $CONFIGFS_PATH/usb_gadget/g1/UDC
+        break
+    done
     ;;
 stop)
+    echo "" > $CONFIGFS_PATH/usb_gadget/g1/UDC
     start-stop-daemon --stop --quiet --exec $DAEMON
     start-stop-daemon --stop --quiet --exec $ADBD
     if [ "$USE_ETHERNET" = "no" ]; then
         sleep 1
         umount /dev/usb-ffs/qdb
         umount /dev/usb-ffs/adb
-        rmmod g_ffs
     fi
     ;;
 restart)
