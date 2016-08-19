@@ -21,6 +21,8 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include <stdint.h>
+
 const uint8_t qdbUsbClassId = 0xff;
 const uint8_t qdbUsbSubclassId = 0x52;
 const uint8_t qdbUsbProtocolId = 0x1;

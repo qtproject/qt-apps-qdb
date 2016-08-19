@@ -23,7 +23,9 @@
 
 #include <QtCore/qobject.h>
 
-class libusb_device_handle;
+#include <stdint.h>
+
+struct libusb_device_handle;
 
 class UsbConnectionReader : public QObject
 {

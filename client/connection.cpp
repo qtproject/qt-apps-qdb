@@ -129,7 +129,7 @@ void Connection::handleMessage()
             qWarning() << "Connection received QdbMessage::Ok in connected state";
             break;
         case QdbMessage::Open:
-            [[fallthrough]]
+            //[[fallthrough]]
         case QdbMessage::Invalid:
             Q_UNREACHABLE();
             break;
@@ -155,7 +155,7 @@ void Connection::handleMessage()
             }
             break;
         case QdbMessage::Open:
-            [[fallthrough]]
+            //[[fallthrough]]
         case QdbMessage::Invalid:
             Q_UNREACHABLE();
             break;
@@ -228,7 +228,7 @@ void Connection::processQueue()
         break;
     case QdbMessage::Ok:
         // 'Ok's are sent via acknowledge()
-        [[fallthrough]]
+        //[[fallthrough]]
     case QdbMessage::Invalid:
         Q_UNREACHABLE();
         break;

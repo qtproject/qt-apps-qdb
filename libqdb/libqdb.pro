@@ -3,23 +3,22 @@ QT       -= gui
 TARGET = qdb
 TEMPLATE = lib
 
-DEFINES += QDB_LIBRARY
+DEFINES += LIBQDB_LIBRARY
 
 SOURCES += \
     abstractconnection.cpp \
-    interruptsignalhandler.cpp \
     protocol/qdbmessage.cpp \
     protocol/qdbtransport.cpp \
     stream.cpp \
     streampacket.cpp \
     usb/usbconnection.cpp \
     usb/usbconnectionreader.cpp \
+    interruptsignalhandler.cpp \
 
 HEADERS += \
     abstractconnection.h \
     filepullcommon.h \
     filepushcommon.h \
-    interruptsignalhandler.h \
     libqdb_global.h \
     processcommon.h \
     protocol/protocol.h \
@@ -30,13 +29,17 @@ HEADERS += \
     streampacket.h \
     usb/usbconnection.h \
     usb/usbconnectionreader.h \
-
-INCLUDEPATH += $$PWD
-
-INCLUDEPATH += $$[QT_SYSROOT]/usr/include/libusb-1.0/
-LIBS += -lusb-1.0
+    interruptsignalhandler.h \
 
 unix {
+    LIBS += -lusb-1.0
     target.path = /usr/lib
     INSTALLS += target
 }
+
+win32 {
+    LIBS += -llibusb-1.0
+}
+
+INCLUDEPATH += $$PWD
+INCLUDEPATH += $$[QT_SYSROOT]/usr/include/libusb-1.0/

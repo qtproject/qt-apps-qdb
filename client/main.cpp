@@ -107,6 +107,7 @@ void setupProcessService(Connection *connection, const QString &processName, con
 int main(int argc, char *argv[])
 {
     QCoreApplication app{argc, argv};
+
     InterruptSignalHandler signalHandler;
 
     QCommandLineParser parser;
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
         qDebug() << "could not initialize Connection";
         return 1;
     }
+
     QObject::connect(&signalHandler, &InterruptSignalHandler::interrupted, [&]() {
         connection.close();
         QCoreApplication::exit(130);

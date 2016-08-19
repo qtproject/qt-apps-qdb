@@ -24,6 +24,8 @@
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
 
+#include <stdint.h>
+
 class QDataStream;
 
 using StreamId = uint32_t;
