@@ -1,4 +1,5 @@
 QT -= gui
+QT += dbus
 
 CONFIG += c++11
 
@@ -13,6 +14,7 @@ HEADERS += \
     echoservice.h \
     filepullservice.h \
     filepushservice.h \
+    networkmanagercontrol.h \
     processservice.h \
     service.h
 
@@ -22,6 +24,7 @@ SOURCES += \
     filepullservice.cpp \
     filepushservice.cpp \
     main.cpp \
+    networkmanagercontrol.cpp \
     processservice.cpp \
     service.cpp
 

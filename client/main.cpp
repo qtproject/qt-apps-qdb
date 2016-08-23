@@ -24,6 +24,7 @@
 #include "filepullservice.h"
 #include "filepushservice.h"
 #include "interruptsignalhandler.h"
+#include "networkmanagercontrol.h"
 #include "processservice.h"
 
 #include <QtCore/qcommandlineparser.h>
@@ -31,6 +32,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qtimer.h>
+#include <QtDBus/QDBusObjectPath>
 
 void setupFilePullService(Connection *connection, const QString &sourcePath, const QString &sinkPath)
 {
@@ -104,6 +106,28 @@ void setupProcessService(Connection *connection, const QString &processName, con
     service->initialize();
 }
 
+void configureUsbNetwork(const QString &macAddress)
+{
+    qDebug() << "Configuring network for" << macAddress;
+    NetworkManagerControl networkManager;
+    auto deviceResult = networkManager.findNetworkDeviceByMac(macAddress);
+    if (!deviceResult.isValid()) {
+        qWarning() << "Could not find network device" << macAddress;
+        return;
+    } else {
+        const auto networkCard = deviceResult.toString();
+        if (networkManager.isActivated(networkCard)) {
+            qDebug() << networkCard << "is activated";
+            if (networkManager.isDeviceUsingLinkLocal(networkCard)) {
+                qInfo() << networkCard << "is already using a link-local IP";
+                return;
+            }
+        }
+        if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, macAddress))
+            qWarning() << "Could not setup network settings for the USB Ethernet interface";
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app{argc, argv};
@@ -137,9 +161,8 @@ int main(int argc, char *argv[])
         QCoreApplication::exit(130);
     });
 
-    qDebug() << "initialized connection";
-
     connection.connect();
+    qDebug() << "initialized connection";
 
     QStringList arguments = parser.positionalArguments();
     if (arguments.size() < 2)
@@ -155,6 +178,10 @@ int main(int argc, char *argv[])
     } else if (command == "pull") {
         Q_ASSERT(arguments.size() == 3);
         setupFilePullService(&connection, arguments[1], arguments[2]);
+    } else if (command == "network") {
+        Q_ASSERT(arguments.size() == 2);
+        configureUsbNetwork(arguments[1]);
+        QTimer::singleShot(1, []() { QCoreApplication::quit(); });
     } else {
         qDebug() << "Unrecognized command:" << command;
         return 1;
