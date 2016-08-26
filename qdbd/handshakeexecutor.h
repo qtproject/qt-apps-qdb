@@ -18,32 +18,24 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef SERVICES_H
-#define SERVICES_H
+#ifndef HANDSHAKEEXECUTOR_H
+#define HANDSHAKEEXECUTOR_H
 
-#include <QtCore/qbytearray.h>
-#include <QtCore/qdatastream.h>
+#include "executor.h"
 
-#include <cstdint>
+class Stream;
 
-enum ServiceTag : uint32_t
+class HandshakeExecutor : public Executor
 {
-    EchoTag = 1,
-    ProcessTag,
-    FilePushTag,
-    FilePullTag,
-    HandshakeTag,
+    Q_OBJECT
+public:
+    HandshakeExecutor(Stream *stream);
+
+public slots:
+    void receive(StreamPacket packet) override;
+
+private:
+    Stream *m_stream;
 };
 
-const int fileTransferBlockSize = 4096; // in bytes
-
-inline
-QByteArray tagBuffer(ServiceTag tag, int padding = 0)
-{
-    QByteArray buffer{static_cast<int>(sizeof(ServiceTag)) + padding, '\0'};
-    QDataStream stream{&buffer, QIODevice::WriteOnly};
-    stream << tag;
-    return buffer;
-}
-
-#endif // SERVICES_H
+#endif // HANDSHAKEEXECUTOR_H

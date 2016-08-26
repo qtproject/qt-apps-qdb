@@ -18,32 +18,35 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef SERVICES_H
-#define SERVICES_H
+#ifndef HANDSHAKESERVICE_H
+#define HANDSHAKESERVICE_H
 
-#include <QtCore/qbytearray.h>
-#include <QtCore/qdatastream.h>
+#include "service.h"
 
-#include <cstdint>
+class Connection;
+class Stream;
+class StreamPacket;
 
-enum ServiceTag : uint32_t
+class HandshakeService : public Service
 {
-    EchoTag = 1,
-    ProcessTag,
-    FilePushTag,
-    FilePullTag,
-    HandshakeTag,
+    Q_OBJECT
+public:
+    explicit HandshakeService(Connection *connection);
+    ~HandshakeService();
+
+    void initialize() override;
+
+    bool hasStream() const;
+    void ask();
+    void close();
+signals:
+    void response(QString serial, QString macAddress);
+
+public slots:
+    void receive(StreamPacket packet) override;
+
+private:
+    Connection *m_connection;
 };
 
-const int fileTransferBlockSize = 4096; // in bytes
-
-inline
-QByteArray tagBuffer(ServiceTag tag, int padding = 0)
-{
-    QByteArray buffer{static_cast<int>(sizeof(ServiceTag)) + padding, '\0'};
-    QDataStream stream{&buffer, QIODevice::WriteOnly};
-    stream << tag;
-    return buffer;
-}
-
-#endif // SERVICES_H
+#endif // HANDSHAKESERVICE_H

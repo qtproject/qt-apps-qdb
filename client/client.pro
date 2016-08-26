@@ -14,6 +14,7 @@ HEADERS += \
     echoservice.h \
     filepullservice.h \
     filepushservice.h \
+    handshakeservice.h \
     networkmanagercontrol.h \
     processservice.h \
     service.h
@@ -23,6 +24,7 @@ SOURCES += \
     echoservice.cpp \
     filepullservice.cpp \
     filepushservice.cpp \
+    handshakeservice.cpp \
     main.cpp \
     networkmanagercontrol.cpp \
     processservice.cpp \

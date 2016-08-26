@@ -24,6 +24,7 @@
 #include "echoexecutor.h"
 #include "filepullexecutor.h"
 #include "filepushexecutor.h"
+#include "handshakeexecutor.h"
 #include "processexecutor.h"
 #include "protocol/services.h"
 
@@ -45,6 +46,8 @@ std::unique_ptr<Executor> createExecutor(Stream *stream, const QByteArray &tagBu
         return make_unique<FilePushExecutor>(stream);
     case FilePullTag:
         return make_unique<FilePullExecutor>(stream);
+    case HandshakeTag:
+        return make_unique<HandshakeExecutor>(stream);
     default:
         qCritical("Unknown ServiceTag %d in createExecutor", tag);
         return std::unique_ptr<Executor>{};

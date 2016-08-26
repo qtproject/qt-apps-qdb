@@ -23,6 +23,7 @@
 #include "connection.h"
 #include "filepullservice.h"
 #include "filepushservice.h"
+#include "handshakeservice.h"
 #include "interruptsignalhandler.h"
 #include "networkmanagercontrol.h"
 #include "processservice.h"
@@ -106,9 +107,9 @@ void setupProcessService(Connection *connection, const QString &processName, con
     service->initialize();
 }
 
-void configureUsbNetwork(const QString &macAddress)
+void configureUsbNetwork(const QString &serial, const QString &macAddress)
 {
-    qDebug() << "Configuring network for" << macAddress;
+    qDebug() << "Configuring network for" << serial << "at" << macAddress;
     NetworkManagerControl networkManager;
     auto deviceResult = networkManager.findNetworkDeviceByMac(macAddress);
     if (!deviceResult.isValid()) {
@@ -123,9 +124,48 @@ void configureUsbNetwork(const QString &macAddress)
                 return;
             }
         }
-        if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, macAddress))
+        if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, serial, macAddress))
             qWarning() << "Could not setup network settings for the USB Ethernet interface";
     }
+}
+
+void setupNetworkConfiguration(Connection *connection)
+{
+    auto *service = new HandshakeService{connection};
+
+    QObject::connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
+                     service, &QObject::deleteLater);
+    QObject::connect(service, &HandshakeService::response,
+                     [](QString serial, QString mac) {
+                         qDebug() << "Device serial:" << serial;
+                         qDebug() << "Host-side MAC address:" << mac;
+                         configureUsbNetwork(serial, mac);
+                         QCoreApplication::quit();
+                     });
+    QObject::connect(service, &Service::initialized, [=]() {
+        service->ask();
+    });
+
+    service->initialize();
+}
+
+void setupHandshakeService(Connection *connection)
+{
+    auto *service = new HandshakeService{connection};
+
+    QObject::connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
+                     service, &QObject::deleteLater);
+    QObject::connect(service, &HandshakeService::response,
+                     [](QString serial, QString mac) {
+                         qDebug() << "Device serial:" << serial;
+                         qDebug() << "Host-side MAC address:" << mac;
+                         QCoreApplication::quit();
+                     });
+    QObject::connect(service, &Service::initialized, [=]() {
+        service->ask();
+    });
+
+    service->initialize();
 }
 
 int main(int argc, char *argv[])
@@ -165,7 +205,7 @@ int main(int argc, char *argv[])
     qDebug() << "initialized connection";
 
     QStringList arguments = parser.positionalArguments();
-    if (arguments.size() < 2)
+    if (arguments.size() < 1)
         return 0;
 
     QString command = arguments[0];
@@ -179,9 +219,16 @@ int main(int argc, char *argv[])
         Q_ASSERT(arguments.size() == 3);
         setupFilePullService(&connection, arguments[1], arguments[2]);
     } else if (command == "network") {
-        Q_ASSERT(arguments.size() == 2);
-        configureUsbNetwork(arguments[1]);
-        QTimer::singleShot(1, []() { QCoreApplication::quit(); });
+        if (arguments.size() == 1) {
+            setupNetworkConfiguration(&connection);
+        } else {
+            Q_ASSERT(arguments.size() == 2);
+            const auto macAddress = arguments[1];
+            configureUsbNetwork(QString{"B2Qt device at %1"}.arg(macAddress), macAddress);
+            QTimer::singleShot(1, []() { QCoreApplication::quit(); });
+        }
+    } else if (command == "handshake") {
+        setupHandshakeService(&connection);
     } else {
         qDebug() << "Unrecognized command:" << command;
         return 1;

@@ -30,8 +30,8 @@ class NetworkManagerControl
 public:
     NetworkManagerControl();
 
-    bool activateOrCreateConnection(const QDBusObjectPath &devicePath, const QString &macAddress);
-    QVariant createConnection(const QString &macAddress);
+    bool activateOrCreateConnection(const QDBusObjectPath &devicePath, const QString &serial, const QString &macAddress);
+    QVariant createConnection(const QString &serial, const QString &macAddress);
     QVariant findConnectionsByMac(const QString &macAddress);
     QVariant findNetworkDeviceByMac(const QString &macAddress);
     bool isActivated(const QString &devicePath);

@@ -15,6 +15,7 @@ SOURCES += \
     executor.cpp \
     filepullexecutor.cpp \
     filepushexecutor.cpp \
+    handshakeexecutor.cpp \
     main.cpp \
     processexecutor.cpp \
     server.cpp \
@@ -29,6 +30,7 @@ HEADERS += \
     executor.h \
     filepullexecutor.h \
     filepushexecutor.h \
+    handshakeexecutor.h \
     processexecutor.h \
     server.h \
     usb-gadget/usbgadget.h \

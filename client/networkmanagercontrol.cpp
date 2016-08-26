@@ -128,7 +128,7 @@ NetworkManagerControl::NetworkManagerControl()
     qDBusRegisterMetaType<SettingsMap>();
 }
 
-bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &devicePath, const QString &macAddress)
+bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &devicePath, const QString &serial, const QString &macAddress)
 {
     qDebug() << "Activating or creating a connection";
     const auto connectionsResult = findConnectionsByMac(macAddress);
@@ -148,7 +148,7 @@ bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &de
         connectionPath = *it;
     } else {
         qDebug() << "Creating new connection";
-        const auto result = createConnection(macAddress);
+        const auto result = createConnection(serial, macAddress);
         if (!result.isValid()) {
             qWarning() << "Could not create a NetworkManager connection for" << macAddress;
             return false;
@@ -179,7 +179,7 @@ bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &de
     return true;
 }
 
-QVariant NetworkManagerControl::createConnection(const QString &macAddress)
+QVariant NetworkManagerControl::createConnection(const QString &serial, const QString &macAddress)
 {
     /*
      * Connection settings have the D-Bus signature a{sa{sv}}.
@@ -199,7 +199,7 @@ QVariant NetworkManagerControl::createConnection(const QString &macAddress)
      */
 
     QMap<QString, QDBusVariant> connectionMap;
-    connectionMap["id"] = QDBusVariant{QString{"B2Qt connection to %1"}.arg(macAddress)};
+    connectionMap["id"] = QDBusVariant{QString{"%1 via USB"}.arg(serial)};
     connectionMap["type"] = QDBusVariant{QStringLiteral("802-3-ethernet")};
 
     QMap<QString, QDBusVariant> ethernetMap;
@@ -283,6 +283,7 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
     QVariant result = listNetworkDevices();
 
     const auto devices = result.value<QList<QDBusObjectPath>>();
+    const auto normalizedMac = macAddress.toUpper();
     for (const auto &device : devices) {
         QDBusInterface wiredDeviceInterface{networkManagerServiceName,
                                             device.path(),
@@ -301,7 +302,7 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
             continue;
         }
 
-        if (macResult.toString() == macAddress) {
+        if (macResult.toString().toUpper() == normalizedMac) {
             qDebug() << macAddress << "is" << device.path();
             return device.path();
         }
