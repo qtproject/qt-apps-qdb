@@ -53,6 +53,19 @@ if [ -e /var/run/dbus/session_bus_address ]; then
   . /var/run/dbus/session_bus_address
 fi
 
+function initialize_gadget() {
+    # Initialize gadget with first UDC driver
+    for driverpath in /sys/class/udc/*; do
+        drivername=`basename $driverpath`
+        echo "$drivername" > $CONFIGFS_PATH/usb_gadget/g1/UDC
+        break
+    done
+}
+
+function disable_gadget() {
+    echo "" > $CONFIGFS_PATH/usb_gadget/g1/UDC
+}
+
 case "$1" in
 start)
     if [ "$USE_ETHERNET" = "no" ]; then
@@ -87,15 +100,10 @@ start)
     start-stop-daemon --start --quiet --exec $DAEMON -- $@ &
     start-stop-daemon --start --quiet --exec $ADBD &
     sleep 1
-    # Initialize gadget with first UDC driver
-    for driverpath in /sys/class/udc/*; do
-        drivername=`basename $driverpath`
-        echo "$drivername" > $CONFIGFS_PATH/usb_gadget/g1/UDC
-        break
-    done
+    initialize_gadget
     ;;
 stop)
-    echo "" > $CONFIGFS_PATH/usb_gadget/g1/UDC
+    disable_gadget
     start-stop-daemon --stop --quiet --exec $DAEMON
     start-stop-daemon --stop --quiet --exec $ADBD
     if [ "$USE_ETHERNET" = "no" ]; then
@@ -105,12 +113,15 @@ stop)
     fi
     ;;
 restart)
+    disable_gadget
     start-stop-daemon --stop --quiet --exec $DAEMON
     start-stop-daemon --stop --quiet --exec $ADBD
     sleep 1
     shift
     start-stop-daemon --start --quiet --exec $DAEMON -- $@ &
     start-stop-daemon --start --quiet --exec $ADBD &
+    sleep 1
+    initialize_gadget
     ;;
 *)
     echo "Usage: $0 {start|stop|restart}"
