@@ -18,6 +18,7 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
+#include "../libqdb/usb/devicemanagement.h"
 #include "../libqdb/usb/usbconnection.h"
 #include "../libqdb/protocol/qdbtransport.h"
 #include "connection.h"
@@ -32,8 +33,11 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
+#include <QtCore/qregularexpression.h>
 #include <QtCore/qtimer.h>
 #include <QtDBus/QDBusObjectPath>
+
+#include <iostream>
 
 void setupFilePullService(Connection *connection, const QString &sourcePath, const QString &sinkPath)
 {
@@ -43,11 +47,11 @@ void setupFilePullService(Connection *connection, const QString &sourcePath, con
                      service, &QObject::deleteLater);
     QObject::connect(service, &FilePullService::pulled,
                      []() {
-                         qDebug() << "File pull finished.";
+                         std::cout << "File pull finished.\n";
                          QCoreApplication::quit();
                      });
     QObject::connect(service, &FilePullService::error, []() {
-        qDebug() << "Error while pulling file.";
+        std::cerr << "Error while pulling file.\n";
         QCoreApplication::exit(1);
     });
     QObject::connect(service, &Service::initialized, [=]() {
@@ -65,11 +69,11 @@ void setupFilePushService(Connection *connection, const QString &sourcePath, con
                      service, &QObject::deleteLater);
     QObject::connect(service, &FilePushService::pushed,
                      []() {
-                         qDebug() << "File transfer finished.";
+                         std::cout << "File transfer finished.\n";
                          QCoreApplication::quit();
                      });
     QObject::connect(service, &FilePushService::error, []() {
-        qDebug() << "Error while pushing file.";
+        std::cerr << "Error while pushing file.\n";
         QCoreApplication::exit(1);
     });
     QObject::connect(service, &Service::initialized, [=]() {
@@ -87,18 +91,21 @@ void setupProcessService(Connection *connection, const QString &processName, con
                      service, &QObject::deleteLater);
     QObject::connect(service, &ProcessService::executed,
                      [](int exitCode, QProcess::ExitStatus exitStatus, QString output) {
-                         qDebug() << "Process run, exit code:" << exitCode << exitStatus << output;
+                         std::printf("Process run, exit code %d (%s):\n%s",
+                                     exitCode,
+                                     exitStatus == QProcess::NormalExit ? "NormalExit" : "CrashExit",
+                                     qUtf8Printable(output));
                          QTimer::singleShot(1, []() { QCoreApplication::quit(); });
                      });
     QObject::connect(service, &ProcessService::executionError, [](QProcess::ProcessError error) {
-        qDebug() << "Process not run, error:" << error;
+        std::cerr << "Process not run, error: " << error << std::endl;
         QTimer::singleShot(1, []() {QCoreApplication::exit(1); });
     });
     QObject::connect(service, &ProcessService::started, []() {
-        qDebug() << "Process started";
+        std::cout << "Process started.\n";
     });
     QObject::connect(service, &ProcessService::readyRead, [=]() {
-        qDebug() << "Process output:" << service->read();
+        std::cout << "Process output: " << qUtf8Printable(service->read()) << std::endl;
     });
     QObject::connect(service, &Service::initialized, [=]() {
         service->execute(processName, arguments);
@@ -176,11 +183,12 @@ int main(int argc, char *argv[])
 
     QCommandLineParser parser;
     parser.addHelpOption();
-    parser.addOption({{"d","debug-transport"}, "Print each message that is sent."});
+    parser.addOption({"debug-transport", "Print each message that is sent."});
     parser.addOption({"debug-connection", "Show enqueued messages"});
+    parser.addOption({{"d", "device"}, "Run the command on <device>. Device is specified with a substring of the device serial number.", "device"});
     parser.addPositionalArgument("command",
                                  "Subcommand of qdb to run. Possible commands are: "
-                                    "run, push, pull");
+                                    "run, push, pull, devices, handshake, network");
     parser.process(app);
 
     QString filterRules;
@@ -190,9 +198,53 @@ int main(int argc, char *argv[])
         filterRules.append("connection=false\n");
     QLoggingCategory::setFilterRules(filterRules);
 
-    Connection connection{new QdbTransport{new UsbConnection{}}};
+    const QStringList arguments = parser.positionalArguments();
+    if (arguments.size() < 1)
+        parser.showHelp(1);
+    const QString command = arguments[0];
+
+    const auto devices = listUsbDevices();
+    if (devices.empty()) {
+        std::cerr << "No QDB devices found.\n";
+        return 1;
+    }
+
+    if (command == "devices") {
+        std::cout << "USB devices:\n";
+        for (const auto &device : devices) {
+            std::cout << "    " << qUtf8Printable(device.serial) << std::endl;
+        }
+        return 0;
+    }
+
+    std::vector<UsbDevice> matchingDevices;
+    if (parser.isSet("device")) {
+        QRegularExpression regexp{parser.value("device")};
+
+        std::copy_if(devices.begin(), devices.end(), std::back_inserter(matchingDevices), [&](const UsbDevice &device) {
+            return regexp.match(device.serial).hasMatch();
+        });
+    } else {
+        matchingDevices = devices;
+    }
+
+    if (matchingDevices.size() == 0) {
+        std::cerr << "No device matching \"" << qUtf8Printable(parser.value("device")) << "\" found.\n";
+        return 1;
+    }
+    if (matchingDevices.size() > 1) {
+        std::cerr << "Device \"" << qUtf8Printable(parser.value("device"))
+                  << "\" could mean any of the following devices:\n";
+        for (const auto &device : devices)
+            std::cout << "    " << qUtf8Printable(device.serial) << std::endl;
+        return 1;
+    }
+    UsbDevice targetDevice = matchingDevices[0];
+    qDebug() << "Executing commands for" << targetDevice.serial;
+
+    Connection connection{new QdbTransport{new UsbConnection{targetDevice}}};
     if (!connection.initialize()) {
-        qDebug() << "could not initialize Connection";
+        std::cerr << "Could not initialize connection to \"" << qUtf8Printable(targetDevice.serial) << "\".\n";
         return 1;
     }
 
@@ -204,11 +256,6 @@ int main(int argc, char *argv[])
     connection.connect();
     qDebug() << "initialized connection";
 
-    QStringList arguments = parser.positionalArguments();
-    if (arguments.size() < 1)
-        return 0;
-
-    QString command = arguments[0];
     if (command == "run") {
         Q_ASSERT(arguments.size() >= 2);
         setupProcessService(&connection, arguments[1], arguments.mid(2));
@@ -230,7 +277,7 @@ int main(int argc, char *argv[])
     } else if (command == "handshake") {
         setupHandshakeService(&connection);
     } else {
-        qDebug() << "Unrecognized command:" << command;
+        std::cerr << "Unrecognized command: " << qUtf8Printable(command) << std::endl;
         return 1;
     }
 

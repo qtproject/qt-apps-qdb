@@ -24,6 +24,7 @@
 #include "../client/processservice.h"
 #include "../client/echoservice.h"
 #include "../utils/make_unique.h"
+#include "usb/devicemanagement.h"
 #include "usb/usbconnection.h"
 #include "protocol/qdbtransport.h"
 #include "protocol/services.h"
@@ -39,7 +40,7 @@ const int testTimeout = 500; // in milliseconds
 struct ConnectionContext
 {
     ConnectionContext()
-        : connection{new QdbTransport{new UsbConnection{}}}
+        : connection{new QdbTransport{new UsbConnection{listUsbDevices()[0]}}}
     {
         QVERIFY(connection.initialize());
 

@@ -18,17 +18,13 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#ifndef DEVICEMANAGER_H
+#define DEVICEMANAGER_H
 
-#include <cstdint>
+#include "usbdevice.h"
 
-const uint8_t qdbUsbClassId = 0xff;
-const uint8_t qdbUsbSubclassId = 0x52;
-const uint8_t qdbUsbProtocolId = 0x1;
-const int qdbHeaderSize = 4*sizeof(uint32_t);
-const int qdbMessageSize = 16*1024;
-const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
-const uint32_t qdbProtocolVersion = 0;
+#include <vector>
 
-#endif
+std::vector<UsbDevice> listUsbDevices();
+
+#endif // DEVICEMANAGER_H

@@ -19,6 +19,7 @@
 **
 ******************************************************************************/
 #include "../utils/make_unique.h"
+#include "usb/devicemanagement.h"
 #include "usb/usbconnection.h"
 #include "protocol/protocol.h"
 #include "protocol/qdbmessage.h"
@@ -44,7 +45,7 @@ public:
 public slots:
     void run()
     {
-        m_transport = make_unique<QdbTransport>(new UsbConnection{});
+        m_transport = make_unique<QdbTransport>(new UsbConnection{listUsbDevices()[0]});
         if (m_transport->open()) {
             qDebug() << "opened transport";
             connect(m_transport.get(), &QdbTransport::messageAvailable, this, &TestCase::testPhases);
@@ -209,7 +210,7 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QdbMessage cnxn{QdbMessage::Connect, 0, 0};
+                QdbMessage cnxn{QdbMessage::Connect, 0, 0, m_versionBuffer};
                 QVERIFY(m_transport->send(cnxn));
                 break;
             }

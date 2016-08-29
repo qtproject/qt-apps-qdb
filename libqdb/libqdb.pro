@@ -15,18 +15,21 @@ DEFINES += LIBQDB_LIBRARY
 
 SOURCES += \
     abstractconnection.cpp \
+    interruptsignalhandler.cpp \
     protocol/qdbmessage.cpp \
     protocol/qdbtransport.cpp \
     stream.cpp \
     streampacket.cpp \
+    usb/devicemanagement.cpp \
+    usb/libusbcontext.cpp \
     usb/usbconnection.cpp \
     usb/usbconnectionreader.cpp \
-    interruptsignalhandler.cpp \
 
 HEADERS += \
     abstractconnection.h \
     filepullcommon.h \
     filepushcommon.h \
+    interruptsignalhandler.h \
     libqdb_global.h \
     processcommon.h \
     protocol/protocol.h \
@@ -35,9 +38,11 @@ HEADERS += \
     protocol/services.h \
     stream.h \
     streampacket.h \
+    usb/devicemanagement.h \
+    usb/usbcommon.h \
     usb/usbconnection.h \
     usb/usbconnectionreader.h \
-    interruptsignalhandler.h \
+    usb/usbdevice.h \
 
 unix {
     target.path = $$[QT_INSTALL_LIBS]

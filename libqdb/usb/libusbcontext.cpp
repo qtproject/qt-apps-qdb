@@ -18,17 +18,34 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#include "usbcommon.h"
 
-#include <cstdint>
+#include <QtGlobal>
 
-const uint8_t qdbUsbClassId = 0xff;
-const uint8_t qdbUsbSubclassId = 0x52;
-const uint8_t qdbUsbProtocolId = 0x1;
-const int qdbHeaderSize = 4*sizeof(uint32_t);
-const int qdbMessageSize = 16*1024;
-const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
-const uint32_t qdbProtocolVersion = 0;
+#include <libusb.h>
 
-#endif
+struct LibUsbContext
+{
+    LibUsbContext()
+        : context{nullptr}
+    {
+        int ret = libusb_init(&context);
+        if (ret) {
+            qCritical("Could not initialize libusb");
+        }
+    }
+
+    ~LibUsbContext()
+    {
+        if (context)
+            libusb_exit(context);
+    }
+
+    libusb_context* context;
+};
+
+libusb_context *libUsbContext()
+{
+    static LibUsbContext context;
+    return context.context;
+}

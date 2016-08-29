@@ -18,17 +18,43 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#ifndef USBDEVICE_H
+#define USBDEVICE_H
+
+#include "usbcommon.h"
+
+#include <QtCore/qstring.h>
 
 #include <cstdint>
+#include <memory>
 
-const uint8_t qdbUsbClassId = 0xff;
-const uint8_t qdbUsbSubclassId = 0x52;
-const uint8_t qdbUsbProtocolId = 0x1;
-const int qdbHeaderSize = 4*sizeof(uint32_t);
-const int qdbMessageSize = 16*1024;
-const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
-const uint32_t qdbProtocolVersion = 0;
+struct libusb_device;
 
-#endif
+class LibUsbDevice {
+public:
+    LibUsbDevice(std::shared_ptr<libusb_device *> devices, int index)
+        : m_deviceList{devices},
+          m_index{index}
+
+    {
+    }
+
+    libusb_device *pointer()
+    {
+        return m_deviceList.get()[m_index];
+    }
+
+private:
+    std::shared_ptr<libusb_device *> m_deviceList;
+    int m_index;
+
+};
+
+struct UsbDevice
+{
+    QString serial;
+    LibUsbDevice usbDevice;
+    UsbInterfaceInfo interfaceInfo;
+};
+
+#endif // USBDEVICE_H

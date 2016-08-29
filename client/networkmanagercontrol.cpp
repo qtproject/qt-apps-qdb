@@ -296,8 +296,9 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
         QVariant macResult = wiredDeviceInterface.property("HwAddress");
         if (!macResult.isValid()) {
             const auto error = wiredDeviceInterface.lastError();
-            // Non-wired devices result in InvalidArgs due to no MAC address and need not be warned about
-            if (error.type() != QDBusError::InvalidArgs)
+            // Non-wired devices result into errors due to no MAC address and need not be warned about.
+            // For some reason the error type in this case can be either UnknownInterface or InvalidArgs.
+            if (error.type() != QDBusError::UnknownInterface && error.type() != QDBusError::InvalidArgs)
                 qWarning() << "Could not fetch hw address for" << device.path() << error;
             continue;
         }

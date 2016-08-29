@@ -17,7 +17,7 @@ HEADERS += \
     handshakeservice.h \
     networkmanagercontrol.h \
     processservice.h \
-    service.h
+    service.h \
 
 SOURCES += \
     connection.cpp \
@@ -28,7 +28,7 @@ SOURCES += \
     main.cpp \
     networkmanagercontrol.cpp \
     processservice.cpp \
-    service.cpp
+    service.cpp \
 
 INCLUDEPATH += $$PWD/../libqdb
 

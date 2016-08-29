@@ -22,6 +22,7 @@
 #define USBMANAGER_H
 
 #include "libqdb_global.h"
+#include "usbdevice.h"
 
 class UsbConnectionReader;
 
@@ -34,14 +35,14 @@ QT_END_NAMESPACE
 
 #include <memory>
 
-struct libusb_context;
+struct libusb_device;
 struct libusb_device_handle;
 
 class LIBQDBSHARED_EXPORT UsbConnection : public QIODevice
 {
     Q_OBJECT
 public:
-    UsbConnection();
+    UsbConnection(const UsbDevice &device);
     ~UsbConnection();
 
     bool open(QIODevice::OpenMode mode) override;
@@ -56,11 +57,9 @@ private slots:
 private:
     void startReader(libusb_device_handle *handle, uint8_t inAddress);
 
-    libusb_context *m_context;
+    LibUsbDevice m_device;
     libusb_device_handle *m_handle;
-    uint8_t m_interfaceNumber;
-    uint8_t m_inAddress;
-    uint8_t m_outAddress;
+    UsbInterfaceInfo m_interfaceInfo;
     std::unique_ptr<QThread> m_readThread;
     std::unique_ptr<UsbConnectionReader> m_reader;
     QQueue<QByteArray> m_reads;

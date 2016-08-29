@@ -18,17 +18,20 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#ifndef USBCOMMON_H
+#define USBCOMMON_H
 
 #include <cstdint>
 
-const uint8_t qdbUsbClassId = 0xff;
-const uint8_t qdbUsbSubclassId = 0x52;
-const uint8_t qdbUsbProtocolId = 0x1;
-const int qdbHeaderSize = 4*sizeof(uint32_t);
-const int qdbMessageSize = 16*1024;
-const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
-const uint32_t qdbProtocolVersion = 0;
+struct libusb_context;
 
-#endif
+libusb_context *libUsbContext();
+
+struct UsbInterfaceInfo
+{
+    uint8_t number;
+    uint8_t inAddress;
+    uint8_t outAddress;
+};
+
+#endif // USBCOMMON_H
