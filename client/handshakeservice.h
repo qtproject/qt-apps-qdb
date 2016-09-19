@@ -40,7 +40,7 @@ public:
     void ask();
     void close();
 signals:
-    void response(QString serial, QString macAddress);
+    void response(QString serial, QString macAddress, QString ipAddress);
 
 public slots:
     void receive(StreamPacket packet) override;

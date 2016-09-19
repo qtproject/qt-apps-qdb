@@ -24,10 +24,33 @@
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
+#include <QtNetwork/qnetworkinterface.h>
+
+const QString gadgetConfigFsPath = "/sys/kernel/config/usb_gadget/g1/";
+
+QString deviceIpAddress()
+{
+    QFile file{gadgetConfigFsPath + "functions/rndis.usb0/ifname"};
+    if (!file.open(QIODevice::ReadOnly))
+        return "";
+
+    const auto interfaceName = QString{file.readAll()}.trimmed();
+    const auto interface = QNetworkInterface::interfaceFromName(interfaceName);
+    const auto addressEntries = interface.addressEntries();
+
+    for (const auto &entry : addressEntries) {
+        const auto ip = entry.ip();
+        if (ip.protocol() == QAbstractSocket::IPv4Protocol) {
+            qDebug() << "Device IP address:" << ip.toString();
+            return ip.toString();
+        }
+    }
+    return "";
+}
 
 QString deviceSerial()
 {
-    QFile file{"/sys/kernel/config/usb_gadget/g1/strings/0x409/serialnumber"};
+    QFile file{gadgetConfigFsPath + "strings/0x409/serialnumber"};
     if (!file.open(QIODevice::ReadOnly))
         return "";
     return QString{file.readAll()}.trimmed();
@@ -35,7 +58,7 @@ QString deviceSerial()
 
 QString hostSideMac()
 {
-    QFile file{"/sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/host_addr"};
+    QFile file{gadgetConfigFsPath + "functions/rndis.usb0/host_addr"};
     if (!file.open(QIODevice::ReadOnly))
         return "";
     return QString{file.readAll()}.trimmed();
@@ -56,5 +79,6 @@ void HandshakeExecutor::receive(StreamPacket packet)
     StreamPacket response;
     response << deviceSerial();
     response << hostSideMac();
+    response << deviceIpAddress();
     m_stream->write(response);
 }

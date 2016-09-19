@@ -143,9 +143,10 @@ void setupNetworkConfiguration(Connection *connection)
     QObject::connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
                      service, &QObject::deleteLater);
     QObject::connect(service, &HandshakeService::response,
-                     [](QString serial, QString mac) {
+                     [](QString serial, QString mac, QString ip) {
                          qDebug() << "Device serial:" << serial;
                          qDebug() << "Host-side MAC address:" << mac;
+                         qDebug() << "Device IP address:" << ip;
                          configureUsbNetwork(serial, mac);
                          QCoreApplication::quit();
                      });
@@ -163,9 +164,10 @@ void setupHandshakeService(Connection *connection)
     QObject::connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
                      service, &QObject::deleteLater);
     QObject::connect(service, &HandshakeService::response,
-                     [](QString serial, QString mac) {
+                     [](QString serial, QString mac, QString ip) {
                          qDebug() << "Device serial:" << serial;
                          qDebug() << "Host-side MAC address:" << mac;
+                         qDebug() << "Device IP address:" << ip;
                          QCoreApplication::quit();
                      });
     QObject::connect(service, &Service::initialized, [=]() {

@@ -70,7 +70,8 @@ void HandshakeService::receive(StreamPacket packet)
 {
     QString serial;
     QString macAddress;
-    packet >> serial >> macAddress;
+    QString deviceIpAddress;
+    packet >> serial >> macAddress >> deviceIpAddress;
 
-    emit response(serial, macAddress);
+    emit response(serial, macAddress, deviceIpAddress);
 }
