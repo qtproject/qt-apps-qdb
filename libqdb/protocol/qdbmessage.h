@@ -26,7 +26,9 @@
 
 #include <stdint.h>
 
+QT_BEGIN_NAMESPACE
 class QDataStream;
+QT_END_NAMESPACE
 
 using StreamId = uint32_t;
 
@@ -72,9 +74,11 @@ private:
 };
 Q_DECLARE_METATYPE(QdbMessage::CommandType)
 
-QDebug &operator<<(QDebug &stream, const QdbMessage &message);
+QT_BEGIN_NAMESPACE
+QDebug &operator<<(QDebug &stream, const ::QdbMessage &message);
 
-QDataStream &operator<<(QDataStream &stream, const QdbMessage &message);
-QDataStream &operator>>(QDataStream &stream, QdbMessage &message);
+QDataStream &operator<<(QDataStream &stream, const ::QdbMessage &message);
+QDataStream &operator>>(QDataStream &stream, ::QdbMessage &message);
+QT_END_NAMESPACE
 
 #endif // QDBMESSAGE_H

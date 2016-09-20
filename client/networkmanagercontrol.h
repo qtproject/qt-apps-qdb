@@ -23,7 +23,9 @@
 
 #include <QtCore/qvariant.h>
 #include <QtDBus/qdbusconnection.h>
+QT_BEGIN_NAMESPACE
 class QDBusObjectPath;
+QT_END_NAMESPACE
 
 class NetworkManagerControl
 {

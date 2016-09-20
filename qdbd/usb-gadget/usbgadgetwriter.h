@@ -21,8 +21,10 @@
 #ifndef USBGADGETWRITER_H
 #define USBGADGETWRITER_H
 
-class QFile;
 #include <QtCore/qobject.h>
+QT_BEGIN_NAMESPACE
+class QFile;
+QT_END_NAMESPACE
 
 class UsbGadgetWriter : public QObject
 {

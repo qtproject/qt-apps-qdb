@@ -24,10 +24,12 @@
 #include "protocol/qdbmessage.h"
 
 #include <QtCore/qobject.h>
+QT_BEGIN_NAMESPACE
+class QIODevice;
+QT_END_NAMESPACE
 
 #include <memory>
 
-class QIODevice;
 
 class QdbTransport : public QObject
 {

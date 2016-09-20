@@ -24,7 +24,10 @@
 #include <QtCore/qobject.h>
 
 #ifdef Q_OS_UNIX
+QT_BEGIN_NAMESPACE
 class QSocketNotifier;
+QT_END_NAMESPACE
+
 #include <memory>
 #include <signal.h>
 

@@ -24,9 +24,11 @@
 class Connection;
 #include "service.h"
 
+#include <QtCore/qstring.h>
+QT_BEGIN_NAMESPACE
 class QByteArray;
 class QFile;
-#include <QtCore/qstring.h>
+QT_END_NAMESPACE
 
 #include <memory>
 

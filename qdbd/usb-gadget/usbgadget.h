@@ -27,8 +27,10 @@ class UsbGadgetWriter;
 #include <QtCore/qbytearray.h>
 #include <QtCore/qfile.h>
 #include <QtCore/qiodevice.h>
-class QThread;
 #include <QtCore/qqueue.h>
+QT_BEGIN_NAMESPACE
+class QThread;
+QT_END_NAMESPACE
 
 #include <memory>
 
