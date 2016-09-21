@@ -1,3 +1,3 @@
 %dependencies = (
-    "qtbase" => "5.7",
+    "qtbase" => "5.8",
 );
