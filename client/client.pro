@@ -35,7 +35,7 @@ INCLUDEPATH += $$PWD/../libqdb
 unix {
     LIBS = -L$$OUT_PWD/../libqdb -lqdb
     QMAKE_RPATHDIR += ../libqdb
-    target.path = /usr/bin
+    target.path = $$[QT_INSTALL_BINS]
     INSTALLS += target
 }
 

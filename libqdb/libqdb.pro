@@ -40,7 +40,7 @@ HEADERS += \
     interruptsignalhandler.h \
 
 unix {
-    target.path = /usr/lib
+    target.path = $$[QT_INSTALL_LIBS]
     INSTALLS += target
 }
 
