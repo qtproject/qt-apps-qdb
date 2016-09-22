@@ -10,6 +10,10 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
+HEADERS += \
+    ../libqdb/protocol/protocol.h \
+    ../libqdb/protocol/qdbmessage.h
+
 SOURCES += \
     tst_qdbmessage.cpp \
     ../libqdb/protocol/qdbmessage.cpp

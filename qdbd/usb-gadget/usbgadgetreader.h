@@ -21,8 +21,10 @@
 #ifndef USBGADGETREADER_H
 #define USBGADGETREADER_H
 
-class QFile;
 #include <QtCore/qobject.h>
+QT_BEGIN_NAMESPACE
+class QFile;
+QT_END_NAMESPACE
 
 class UsbGadgetReader : public QObject
 {

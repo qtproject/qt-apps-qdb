@@ -24,8 +24,10 @@
 #include "executor.h"
 class Stream;
 
+QT_BEGIN_NAMESPACE
 class QByteArray;
 class QFile;
+QT_END_NAMESPACE
 
 #include <memory>
 

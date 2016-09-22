@@ -109,15 +109,6 @@ void QdbMessage::setData(const char *data, int length)
     m_data = QByteArray{data, length};
 }
 
-QDataStream &operator<<(QDataStream &stream, const QdbMessage &message)
-{
-    stream << message.command();
-    stream << message.hostStream() << message.deviceStream();
-    stream << message.data();
-
-    return stream;
-}
-
 QdbMessage::CommandType toCommandType(uint32_t command)
 {
     switch (command) {
@@ -133,6 +124,17 @@ QdbMessage::CommandType toCommandType(uint32_t command)
         return QdbMessage::Ok;
     }
     return QdbMessage::Invalid;
+}
+
+QT_BEGIN_NAMESPACE
+
+QDataStream &operator<<(QDataStream &stream, const QdbMessage &message)
+{
+    stream << message.command();
+    stream << message.hostStream() << message.deviceStream();
+    stream << message.data();
+
+    return stream;
 }
 
 QDataStream &operator>>(QDataStream &stream, QdbMessage &message)
@@ -156,7 +158,7 @@ QDataStream &operator>>(QDataStream &stream, QdbMessage &message)
     return stream;
 }
 
-QDebug &operator<<(QDebug &stream, QdbMessage::CommandType command)
+QDebug &operator<<(QDebug &stream, ::QdbMessage::CommandType command)
 {
     switch (command) {
     case QdbMessage::Invalid:
@@ -188,3 +190,5 @@ QDebug &operator<<(QDebug &stream, const QdbMessage &message)
 
     return stream;
 }
+
+QT_END_NAMESPACE

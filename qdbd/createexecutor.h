@@ -21,12 +21,16 @@
 #ifndef CREATEEXECUTOR_H
 #define CREATEEXECUTOR_H
 
+#include <qglobal.h>
+
 #include <memory>
 
 class Executor;
 class Stream;
 
+QT_BEGIN_NAMESPACE
 class QByteArray;
+QT_END_NAMESPACE
 
 std::unique_ptr<Executor> createExecutor(Stream *stream, const QByteArray &tagBuffer);
 
