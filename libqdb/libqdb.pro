@@ -3,6 +3,14 @@ QT       -= gui
 TARGET = qdb
 TEMPLATE = lib
 
+unix {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += libusb-1.0
+}
+win32 {
+    LIBS += -llibusb-1.0
+}
+
 DEFINES += LIBQDB_LIBRARY
 
 SOURCES += \
@@ -32,14 +40,8 @@ HEADERS += \
     interruptsignalhandler.h \
 
 unix {
-    LIBS += -lusb-1.0
     target.path = /usr/lib
     INSTALLS += target
 }
 
-win32 {
-    LIBS += -llibusb-1.0
-}
-
 INCLUDEPATH += $$PWD
-INCLUDEPATH += $$[QT_SYSROOT]/usr/include/libusb-1.0/
