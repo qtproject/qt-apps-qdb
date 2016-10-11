@@ -18,41 +18,39 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#include "libqdb/protocol/qdbtransport.h"
-#include "usb-gadget/usbgadget.h"
-#include "server.h"
+#include "client/client.h"
+#include "libqdb/interruptsignalhandler.h"
+#include "server/hostserver.h"
 
 #include <QtCore/qcommandlineparser.h>
 #include <QtCore/qcoreapplication.h>
-#include <QtCore/qdebug.h>
-#include <QtCore/qloggingcategory.h>
+
+#include <iostream>
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    QCoreApplication app{argc, argv};
 
     QCommandLineParser parser;
     parser.addHelpOption();
-    parser.addOption({"debug-transport", "Show each transmitted message"});
-    parser.addOption({"debug-connection", "Show enqueued messages"});
+    parser.addOption({"debug-transport", "Print each message that is sent. (Only server process)"});
+    parser.addOption({"debug-connection", "Show enqueued messages. (Only server process)"});
+    parser.addPositionalArgument("command",
+                                 "Subcommand of qdb to run. Possible commands are: "
+                                    "devices, server");
     parser.process(app);
 
-    QString filterRules;
-    if (!parser.isSet("debug-transport")) {
-        filterRules.append("transport=false\n");
-    }
-    if (!parser.isSet("debug-connection")) {
-        filterRules.append("connection=false\n");
-    }
-    QLoggingCategory::setFilterRules(filterRules);
+    const QStringList arguments = parser.positionalArguments();
+    if (arguments.size() < 1)
+        parser.showHelp(1);
+    const QString command = arguments[0];
 
-    Server server{new QdbTransport{new UsbGadget{}}};
-    if (server.initialize()) {
-        qDebug() << "initialized server";
+    if (command == "devices") {
+        return askDevices(app);
+    } else if (command == "server") {
+        return hostServer(app, parser);
     } else {
-        qDebug() << "could not initialize server";
+        std::cerr << "Unrecognized command: " << qUtf8Printable(command) << std::endl;
         return 1;
     }
-
-    return app.exec();
 }

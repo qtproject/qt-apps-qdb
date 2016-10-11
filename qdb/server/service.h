@@ -18,42 +18,35 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef PROCESSEXECUTOR_H
-#define PROCESSEXECUTOR_H
+#ifndef SERVICE_H
+#define SERVICE_H
 
-#include "executor.h"
 class Stream;
+#include "libqdb/streampacket.h"
 
-#include "QtCore/qprocess.h"
-QT_BEGIN_NAMESPACE
-class QByteArray;
-class QDataStream;
-QT_END_NAMESPACE
+#include <QtCore/qobject.h>
 
-#include <memory>
-
-class ProcessExecutor : public Executor
+class Service : public QObject
 {
     Q_OBJECT
 public:
-    explicit ProcessExecutor(Stream *stream);
+    Service();
+    virtual ~Service() { }
+
+    virtual void initialize() = 0;
+    virtual void streamCreated(Stream *stream);
+
+signals:
+    void initialized();
 
 public slots:
-    void receive(StreamPacket packet) override;
+    virtual void receive(StreamPacket) = 0;
 
 private slots:
-    void onStarted();
-    void onReadyRead();
-    void onFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void onErrorOccurred(QProcess::ProcessError error);
-    void onStreamClosed();
+    virtual void onStreamClosed();
 
-private:
-    void startProcess(const QString &command, const QStringList &arguments);
-    void writeToProcess(const QByteArray &data);
-
+protected:
     Stream *m_stream;
-    std::unique_ptr<QProcess> m_process;
 };
 
-#endif // PROCESSEXECUTOR_H
+#endif // SERVICE_H

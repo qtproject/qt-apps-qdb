@@ -1,5 +1,5 @@
 QT -= gui
-QT += dbus
+QT += dbus network
 
 CONFIG += c++11
 
@@ -10,27 +10,27 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 HEADERS += \
-    connection.h \
-    echoservice.h \
-    filepullservice.h \
-    filepushservice.h \
-    handshakeservice.h \
-    networkmanagercontrol.h \
-    processservice.h \
-    service.h \
+    client/client.h \
+    server/connection.h \
+    server/deviceinformationfetcher.h \
+    server/echoservice.h \
+    server/handshakeservice.h \
+    server/hostserver.h \
+    server/networkmanagercontrol.h \
+    server/service.h \
 
 SOURCES += \
-    connection.cpp \
-    echoservice.cpp \
-    filepullservice.cpp \
-    filepushservice.cpp \
-    handshakeservice.cpp \
+    client/client.cpp \
     main.cpp \
-    networkmanagercontrol.cpp \
-    processservice.cpp \
-    service.cpp \
+    server/connection.cpp \
+    server/deviceinformationfetcher.cpp \
+    server/echoservice.cpp \
+    server/handshakeservice.cpp \
+    server/hostserver.cpp \
+    server/networkmanagercontrol.cpp \
+    server/service.cpp \
 
-INCLUDEPATH += $$PWD/../libqdb
+INCLUDEPATH += $$PWD/../
 
 unix {
     LIBS = -L$$OUT_PWD/../libqdb -lqdb
@@ -40,12 +40,11 @@ unix {
 }
 
 win32 {
-
-CONFIG(debug, debug|release) {
-    LIBQDBDIR = $$OUT_PWD/../libqdb/debug
-} else {
-    LIBQDBDIR = $$OUT_PWD/../libqdb/release
-}
+    CONFIG(debug, debug|release) {
+        LIBQDBDIR = $$OUT_PWD/../libqdb/debug
+    } else {
+        LIBQDBDIR = $$OUT_PWD/../libqdb/release
+    }
 
     LIBS = -L$$LIBQDBDIR -lqdb
 

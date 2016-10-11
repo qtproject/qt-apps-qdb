@@ -19,10 +19,10 @@
 **
 ******************************************************************************/
 #include "devicemanagement.h"
-#include "protocol/protocol.h"
+#include "scopeguard.h"
 #include "usbcommon.h"
 #include "usbconnection.h"
-#include "../utils/scopeguard.h"
+#include "qdbconstants.h"
 
 #include <QtCore/qdebug.h>
 

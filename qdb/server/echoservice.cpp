@@ -18,60 +18,54 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#include "handshakeservice.h"
+#include "echoservice.h"
 
 #include "connection.h"
-#include "protocol/services.h"
-#include "stream.h"
+#include "libqdb/protocol/services.h"
+#include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
 
-HandshakeService::HandshakeService(Connection *connection)
+EchoService::EchoService(Connection *connection)
     : m_connection{connection}
 {
 
 }
 
-HandshakeService::~HandshakeService()
+EchoService::~EchoService()
 {
     if (m_stream)
         m_stream->requestClose();
 }
 
-void HandshakeService::initialize()
+void EchoService::initialize()
 {
-    m_connection->createStream(tagBuffer(HandshakeTag), [=](Stream *stream) {
+    m_connection->createStream(tagBuffer(EchoTag), [=](Stream *stream) {
         this->streamCreated(stream);
     });
 }
 
-bool HandshakeService::hasStream() const
+bool EchoService::hasStream() const
 {
     return m_stream != nullptr;
 }
 
-void HandshakeService::ask()
+void EchoService::send(const QString &string)
 {
     if (!m_stream) {
-        qCritical() << "No valid stream in HandshakeService when trying to send";
+        qCritical() << "No valid stream in EchoService when trying to send";
         return;
     }
-    StreamPacket packet{};
-    packet << 0;
+    StreamPacket packet{string.toUtf8()};
     m_stream->write(packet);
 }
 
-void HandshakeService::close()
+void EchoService::close()
 {
     m_stream->requestClose();
 }
 
-void HandshakeService::receive(StreamPacket packet)
+void EchoService::receive(StreamPacket packet)
 {
-    QString serial;
-    QString macAddress;
-    QString deviceIpAddress;
-    packet >> serial >> macAddress >> deviceIpAddress;
-
-    emit response(serial, macAddress, deviceIpAddress);
+    emit echo(QString{packet.buffer()});
 }

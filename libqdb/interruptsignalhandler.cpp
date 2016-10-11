@@ -21,7 +21,7 @@
 #include "interruptsignalhandler.h"
 
 #ifdef Q_OS_UNIX
-#include "../utils/make_unique.h"
+#include "libqdb/make_unique.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qsocketnotifier.h>

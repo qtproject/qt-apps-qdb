@@ -18,48 +18,29 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef FILEPUSHSERVICE_H
-#define FILEPUSHSERVICE_H
-
-class Connection;
 #include "service.h"
 
-#include <QtCore/qstring.h>
-QT_BEGIN_NAMESPACE
-class QByteArray;
-class QFile;
-QT_END_NAMESPACE
+#include "libqdb/stream.h"
 
-#include <memory>
+#include <QtCore/qdebug.h>
 
-class FilePushService : public Service
+Service::Service()
+    : m_stream{nullptr}
 {
-    Q_OBJECT
-public:
-    explicit FilePushService(Connection *connection);
-    ~FilePushService();
 
-    void initialize() override;
+}
 
-    bool push(const QString &hostPath, const QString &devicePath);
+void Service::streamCreated(Stream *stream)
+{
+    if (stream) {
+        m_stream = stream;
+        connect(m_stream, &Stream::packetAvailable, this, &Service::receive);
+        connect(m_stream, &Stream::closed, this, &Service::onStreamClosed);
+        emit initialized();
+    }
+}
 
-signals:
-    void pushed();
-    void error(QString error);
-
-public slots:
-    void receive(StreamPacket packet) override;
-
-private:
-    bool openSource();
-    void transferBlock();
-    void endTransfer();
-
-    Connection *m_connection;
-    QString m_hostPath;
-    QString m_devicePath;
-    std::unique_ptr<QFile> m_source;
-    bool m_transferring;
-};
-
-#endif // FILEPUSHSERVICE_H
+void Service::onStreamClosed()
+{
+    m_stream = nullptr;
+}

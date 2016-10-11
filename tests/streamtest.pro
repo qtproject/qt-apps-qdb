@@ -8,27 +8,26 @@ TEMPLATE = app
 
 SOURCES += streamtest.cpp
 
-INCLUDEPATH += $$PWD/../libqdb
+INCLUDEPATH += $$PWD/../
 
 unix {
-LIBS = -L$$OUT_PWD/../libqdb -lqdb
-QMAKE_RPATHDIR += ../libqdb
+    LIBS = -L$$OUT_PWD/../libqdb -lqdb
+    QMAKE_RPATHDIR += ../libqdb
 }
 
 win32 {
-HEADERS += \
-    ../libqdb/protocol/qdbmessage.h \
-    ../libqdb/protocol/qdbtransport.h
+    HEADERS += \
+        ../libqdb/protocol/qdbmessage.h \
+        ../libqdb/protocol/qdbtransport.h
 
-SOURCES += \
-    ../libqdb/protocol/qdbmessage.cpp \
-    ../libqdb/protocol/qdbtransport.cpp
+    SOURCES += \
+        ../libqdb/protocol/qdbmessage.cpp \
+        ../libqdb/protocol/qdbtransport.cpp
 
-CONFIG(debug, debug|release) {
-    LIBQDBDIR = $$OUT_PWD/../libqdb/debug
-} else {
-    LIBQDBDIR = $$OUT_PWD/../libqdb/release
+    CONFIG(debug, debug|release) {
+        LIBQDBDIR = $$OUT_PWD/../libqdb/debug
+    } else {
+        LIBQDBDIR = $$OUT_PWD/../libqdb/release
+    }
+    LIBS = -L$$LIBQDBDIR -lqdb
 }
-LIBS = -L$$LIBQDBDIR -lqdb
-}
-

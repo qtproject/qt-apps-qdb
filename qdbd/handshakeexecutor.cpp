@@ -20,7 +20,7 @@
 ******************************************************************************/
 #include "handshakeexecutor.h"
 
-#include "stream.h"
+#include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>

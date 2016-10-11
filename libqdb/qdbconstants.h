@@ -18,29 +18,15 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#include "service.h"
+#ifndef QDBCONSTANTS_H
+#define QDBCONSTANTS_H
 
-#include "stream.h"
+#include <cstdint>
 
-#include <QtCore/qdebug.h>
+const char * const qdbSocketName = "qdb.socket";
 
-Service::Service()
-    : m_stream{nullptr}
-{
+const uint8_t qdbUsbClassId = 0xff;
+const uint8_t qdbUsbSubclassId = 0x52;
+const uint8_t qdbUsbProtocolId = 0x1;
 
-}
-
-void Service::streamCreated(Stream *stream)
-{
-    if (stream) {
-        m_stream = stream;
-        connect(m_stream, &Stream::packetAvailable, this, &Service::receive);
-        connect(m_stream, &Stream::closed, this, &Service::onStreamClosed);
-        emit initialized();
-    }
-}
-
-void Service::onStreamClosed()
-{
-    m_stream = nullptr;
-}
+#endif // QDBCONSTANTS_H

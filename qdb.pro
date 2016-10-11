@@ -5,10 +5,10 @@ load(configure)
 
 SUBDIRS += \
     libqdb \
-    client \
-    tests
+    qdb \
+    tests \
 
-client.depends += libqdb
+qdb.depends += libqdb
 tests.depends += libqdb
 
 unix {

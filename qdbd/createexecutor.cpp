@@ -20,13 +20,10 @@
 ******************************************************************************/
 #include "createexecutor.h"
 
-#include "../utils/make_unique.h"
 #include "echoexecutor.h"
-#include "filepullexecutor.h"
-#include "filepushexecutor.h"
 #include "handshakeexecutor.h"
-#include "processexecutor.h"
-#include "protocol/services.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/protocol/services.h"
 
 #include <QtCore/qdatastream.h>
 #include <QtCore/qfile.h>
@@ -40,12 +37,6 @@ std::unique_ptr<Executor> createExecutor(Stream *stream, const QByteArray &tagBu
     switch (static_cast<ServiceTag>(tag)) {
     case EchoTag:
         return make_unique<EchoExecutor>(stream);
-    case ProcessTag:
-        return make_unique<ProcessExecutor>(stream);
-    case FilePushTag:
-        return make_unique<FilePushExecutor>(stream);
-    case FilePullTag:
-        return make_unique<FilePullExecutor>(stream);
     case HandshakeTag:
         return make_unique<HandshakeExecutor>(stream);
     default:

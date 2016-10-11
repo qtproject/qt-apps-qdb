@@ -29,13 +29,8 @@
 enum ServiceTag : uint32_t
 {
     EchoTag = 1,
-    ProcessTag,
-    FilePushTag,
-    FilePullTag,
     HandshakeTag,
 };
-
-const int fileTransferBlockSize = 4096; // in bytes
 
 inline
 QByteArray tagBuffer(ServiceTag tag, int padding = 0)

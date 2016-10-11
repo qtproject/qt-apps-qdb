@@ -20,8 +20,8 @@
 ******************************************************************************/
 #include <QtTest/QtTest>
 
-#include "abstractconnection.h"
-#include "stream.h"
+#include "libqdb/abstractconnection.h"
+#include "libqdb/stream.h"
 
 class ConnectionStub : public AbstractConnection
 {

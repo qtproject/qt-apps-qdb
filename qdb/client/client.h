@@ -18,35 +18,11 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef FILEPULLEXECUTOR_H
-#define FILEPULLEXECUTOR_H
+#ifndef CLIENT_H
+#define CLIENT_H
 
-#include "executor.h"
-class Stream;
+class QCoreApplication;
 
-QT_BEGIN_NAMESPACE
-class QByteArray;
-class QFile;
-QT_END_NAMESPACE
+int askDevices(QCoreApplication &app);
 
-#include <memory>
-
-class FilePullExecutor : public Executor
-{
-public:
-    explicit FilePullExecutor(Stream *stream);
-
-public slots:
-    void receive(StreamPacket packet) override;
-
-private:
-    bool openSource(const QString &path);
-    void transferBlock();
-    void closeSource();
-
-    Stream* m_stream;
-    std::unique_ptr<QFile> m_source;
-    bool m_transferring;
-};
-
-#endif // FILEPULLEXECUTOR_H
+#endif // CLIENT_H

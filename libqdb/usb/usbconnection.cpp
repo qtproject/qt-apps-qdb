@@ -20,9 +20,9 @@
 ******************************************************************************/
 #include "usbconnection.h"
 
-#include "../utils/make_unique.h"
-#include "../utils/scopeguard.h"
+#include "make_unique.h"
 #include "protocol/protocol.h"
+#include "scopeguard.h"
 #include "usbcommon.h"
 #include "usbconnectionreader.h"
 

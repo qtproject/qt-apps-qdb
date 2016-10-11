@@ -20,9 +20,9 @@
 ******************************************************************************/
 #include "connection.h"
 
-#include "../utils/make_unique.h"
-#include "protocol/protocol.h"
-#include "protocol/qdbtransport.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/protocol/qdbtransport.h"
 #include "service.h"
 
 #include <QtCore/qdebug.h>

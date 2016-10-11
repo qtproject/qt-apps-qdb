@@ -18,13 +18,13 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#include "../utils/make_unique.h"
-#include "usb/devicemanagement.h"
-#include "usb/usbconnection.h"
-#include "protocol/protocol.h"
-#include "protocol/qdbmessage.h"
-#include "protocol/qdbtransport.h"
-#include "protocol/services.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/protocol/qdbmessage.h"
+#include "libqdb/protocol/qdbtransport.h"
+#include "libqdb/protocol/services.h"
+#include "libqdb/usb/devicemanagement.h"
+#include "libqdb/usb/usbconnection.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qtimer.h>

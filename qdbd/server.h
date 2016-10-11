@@ -21,7 +21,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "abstractconnection.h"
+#include "libqdb/abstractconnection.h"
 class Executor;
 class QdbMessage;
 class QdbTransport;

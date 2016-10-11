@@ -21,7 +21,7 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include "abstractconnection.h"
+#include "libqdb/abstractconnection.h"
 class Service;
 class QdbMessage;
 class QdbTransport;

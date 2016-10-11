@@ -22,7 +22,7 @@
 #define EXECUTOR_H
 
 class Stream;
-#include "streampacket.h"
+#include "libqdb/streampacket.h"
 
 #include <QtCore/qobject.h>
 

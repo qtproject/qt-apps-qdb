@@ -20,8 +20,8 @@
 ******************************************************************************/
 #include "usbgadgetreader.h"
 
-#include "protocol/protocol.h"
-#include "protocol/qdbmessage.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/protocol/qdbmessage.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>

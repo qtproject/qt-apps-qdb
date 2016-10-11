@@ -21,7 +21,7 @@
 #ifndef USBMANAGER_H
 #define USBMANAGER_H
 
-#include "libqdb_global.h"
+#include "../libqdb_global.h"
 #include "usbdevice.h"
 
 class UsbConnectionReader;

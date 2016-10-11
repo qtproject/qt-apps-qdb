@@ -13,31 +13,24 @@ SOURCES += \
     createexecutor.cpp \
     echoexecutor.cpp \
     executor.cpp \
-    filepullexecutor.cpp \
-    filepushexecutor.cpp \
     handshakeexecutor.cpp \
     main.cpp \
-    processexecutor.cpp \
     server.cpp \
     usb-gadget/usbgadget.cpp \
     usb-gadget/usbgadgetreader.cpp \
     usb-gadget/usbgadgetwriter.cpp \
 
-
 HEADERS += \
     createexecutor.h \
     echoexecutor.h \
     executor.h \
-    filepullexecutor.h \
-    filepushexecutor.h \
     handshakeexecutor.h \
-    processexecutor.h \
     server.h \
     usb-gadget/usbgadget.h \
     usb-gadget/usbgadgetreader.h \
     usb-gadget/usbgadgetwriter.h \
 
-INCLUDEPATH += $$PWD/../libqdb
+INCLUDEPATH += $$PWD/../
 
 LIBS = -L$$OUT_PWD/../libqdb -lqdb
 QMAKE_RPATHDIR += ../libqdb

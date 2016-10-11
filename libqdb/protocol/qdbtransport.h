@@ -21,7 +21,7 @@
 #ifndef QDBTRANSPORT_H
 #define QDBTRANSPORT_H
 
-#include "protocol/qdbmessage.h"
+#include "qdbmessage.h"
 
 #include <QtCore/qobject.h>
 QT_BEGIN_NAMESPACE

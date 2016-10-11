@@ -20,7 +20,7 @@
 ******************************************************************************/
 #include "echoexecutor.h"
 
-#include "stream.h"
+#include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
 

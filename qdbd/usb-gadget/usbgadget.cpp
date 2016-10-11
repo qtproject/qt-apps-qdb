@@ -20,9 +20,8 @@
 ******************************************************************************/
 #include "usbgadget.h"
 
-#include "../utils/make_unique.h"
-#include "protocol/protocol.h"
-#include "protocol/qdbmessage.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/qdbconstants.h"
 #include "usb-gadget/usbgadgetreader.h"
 #include "usb-gadget/usbgadgetwriter.h"
 

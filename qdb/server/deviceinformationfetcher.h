@@ -18,34 +18,39 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef FILEPUSHEXECUTOR_H
-#define FILEPUSHEXECUTOR_H
+#ifndef DEVICEINFORMATIONFETCHER_H
+#define DEVICEINFORMATIONFETCHER_H
 
-#include "executor.h"
-class Stream;
+#include "connection.h"
+#include "libqdb/usb/usbdevice.h"
 
-QT_BEGIN_NAMESPACE
-class QByteArray;
-class QFile;
-QT_END_NAMESPACE
+#include <QtCore/qobject.h>
 
-#include <memory>
-
-class FilePushExecutor : public Executor
+struct DeviceInformation
 {
-public:
-    explicit FilePushExecutor(Stream *stream);
-
-public slots:
-    void receive(StreamPacket packet) override;
-
-private:
-    void openSink(const QString &path);
-    void writeToSink(const QByteArray &data);
-    void closeSink();
-
-    Stream* m_stream;
-    std::unique_ptr<QFile> m_sink;
+    QString serial;
+    QString hostMac;
+    QString ipAddress;
 };
 
-#endif // FILEPUSHEXECUTOR_H
+class DeviceInformationFetcher : public QObject
+{
+    Q_OBJECT
+public:
+    explicit DeviceInformationFetcher(UsbDevice device);
+
+signals:
+    void fetched(DeviceInformation deviceInfo);
+
+public slots:
+    void fetch();
+
+private slots:
+    void handshakeResponse(QString serial, QString hostMac, QString ipAddress);
+
+private:
+    Connection *m_connection; // owned by this class, deletion set up in constructor
+    bool m_connected;
+};
+
+#endif // DEVICEINFORMATIONFETCHER_H

@@ -49,4 +49,4 @@ unix {
     INSTALLS += target
 }
 
-INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD/..

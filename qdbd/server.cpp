@@ -20,13 +20,13 @@
 ******************************************************************************/
 #include "server.h"
 
-#include "../utils/make_unique.h"
 #include "createexecutor.h"
 #include "echoexecutor.h"
-#include "protocol/protocol.h"
-#include "protocol/qdbmessage.h"
-#include "protocol/qdbtransport.h"
-#include "stream.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/protocol/qdbmessage.h"
+#include "libqdb/protocol/qdbtransport.h"
+#include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
