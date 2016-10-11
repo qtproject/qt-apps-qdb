@@ -35,6 +35,7 @@ UsbConnection::UsbConnection(const UsbDevice &device)
     : m_device{device.usbDevice},
       m_handle{nullptr},
       m_interfaceInfo(device.interfaceInfo), // uniform initialization with {} fails with GCC 4.9
+      m_detachedKernel{false},
       m_readThread{nullptr},
       m_reader{nullptr},
       m_reads{}
@@ -49,6 +50,8 @@ UsbConnection::~UsbConnection()
     }
     if (m_handle) {
         libusb_release_interface(m_handle, m_interfaceInfo.number);
+        if (m_detachedKernel)
+            libusb_attach_kernel_driver(m_handle, m_interfaceInfo.number);
         libusb_close(m_handle);
     }
 }
@@ -75,7 +78,11 @@ bool UsbConnection::open(OpenMode mode)
         return false;
     }
 
-    libusb_set_auto_detach_kernel_driver(m_handle, 1);
+    if (libusb_kernel_driver_active(m_handle, m_interfaceInfo.number) == 1) {
+        qDebug() << "Detached kernel driver";
+        m_detachedKernel = true;
+        libusb_detach_kernel_driver(m_handle, m_interfaceInfo.number);
+    }
 
     ret = libusb_claim_interface(m_handle, m_interfaceInfo.number);
     if (ret) {

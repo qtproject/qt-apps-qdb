@@ -60,6 +60,7 @@ private:
     LibUsbDevice m_device;
     libusb_device_handle *m_handle;
     UsbInterfaceInfo m_interfaceInfo;
+    bool m_detachedKernel;
     std::unique_ptr<QThread> m_readThread;
     std::unique_ptr<UsbConnectionReader> m_reader;
     QQueue<QByteArray> m_reads;
