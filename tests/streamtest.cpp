@@ -23,8 +23,8 @@
 #include "libqdb/protocol/qdbmessage.h"
 #include "libqdb/protocol/qdbtransport.h"
 #include "libqdb/protocol/services.h"
-#include "libqdb/usb/devicemanagement.h"
-#include "libqdb/usb/usbconnection.h"
+#include "qdb/server/usb-host/usbconnection.h"
+#include "qdb/server/usb-host/usbdeviceenumerator.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qtimer.h>
@@ -45,7 +45,8 @@ public:
 public slots:
     void run()
     {
-        m_transport = make_unique<QdbTransport>(new UsbConnection{listUsbDevices()[0]});
+        UsbDeviceEnumerator deviceManager;
+        m_transport = make_unique<QdbTransport>(new UsbConnection{deviceManager.listUsbDevices()[0]});
         if (m_transport->open()) {
             qDebug() << "opened transport";
             connect(m_transport.get(), &QdbTransport::messageAvailable, this, &TestCase::testPhases);

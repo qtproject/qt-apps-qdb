@@ -21,10 +21,10 @@
 #include "libqdb/make_unique.h"
 #include "libqdb/protocol/qdbtransport.h"
 #include "libqdb/protocol/services.h"
-#include "libqdb/usb/devicemanagement.h"
-#include "libqdb/usb/usbconnection.h"
 #include "qdb/server/connection.h"
 #include "qdb/server/echoservice.h"
+#include "qdb/server/usb-host/usbconnection.h"
+#include "qdb/server/usb-host/usbdeviceenumerator.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qregularexpression.h>
@@ -37,12 +37,14 @@ const int testTimeout = 500; // in milliseconds
 struct ConnectionContext
 {
     ConnectionContext()
-        : connection{new QdbTransport{new UsbConnection{listUsbDevices()[0]}}}
+        : deviceEnumerator{},
+          connection{new QdbTransport{new UsbConnection{deviceEnumerator.listUsbDevices()[0]}}}
     {
         QVERIFY(connection.initialize());
 
         connection.connect();
     }
+    UsbDeviceEnumerator deviceEnumerator;
     Connection connection;
 };
 

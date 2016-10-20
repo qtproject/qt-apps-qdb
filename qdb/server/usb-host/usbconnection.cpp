@@ -20,9 +20,9 @@
 ******************************************************************************/
 #include "usbconnection.h"
 
-#include "make_unique.h"
-#include "protocol/protocol.h"
-#include "scopeguard.h"
+#include "libqdb/make_unique.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/scopeguard.h"
 #include "usbcommon.h"
 #include "usbconnectionreader.h"
 

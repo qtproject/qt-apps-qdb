@@ -18,13 +18,36 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef DEVICEMANAGER_H
-#define DEVICEMANAGER_H
+#ifndef USBDEVICEENUMERATOR_H
+#define USBDEVICEENUMERATOR_H
 
 #include "usbdevice.h"
 
+#include <QtCore/qobject.h>
+#include <QtCore/qtimer.h>
+
 #include <vector>
 
-std::vector<UsbDevice> listUsbDevices();
+class UsbDeviceEnumerator : public QObject
+{
+    Q_OBJECT
+public:
+    UsbDeviceEnumerator();
+    ~UsbDeviceEnumerator();
 
-#endif // DEVICEMANAGER_H
+    std::vector<UsbDevice> listUsbDevices();
+    void startMonitoring();
+    void stopMonitoring();
+
+signals:
+    void devicePluggedIn(UsbDevice device);
+    void deviceUnplugged(UsbAddress address);
+
+private:
+    void pollQdbDevices();
+
+    QTimer m_pollTimer;
+    std::vector<UsbDevice> m_qdbDevices;
+};
+
+#endif // USBDEVICEENUMERATOR_H

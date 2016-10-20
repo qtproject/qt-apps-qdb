@@ -18,11 +18,12 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#include "devicemanagement.h"
-#include "scopeguard.h"
+#include "libqdb/protocol/protocol.h"
+#include "libqdb/scopeguard.h"
+#include "libqdb/qdbconstants.h"
 #include "usbcommon.h"
 #include "usbconnection.h"
-#include "qdbconstants.h"
+#include "usbdeviceenumerator.h"
 
 #include <QtCore/qdebug.h>
 
@@ -63,6 +64,14 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
     return std::make_pair(true, info);
 }
 
+UsbAddress getAddress(libusb_device *device)
+{
+    return UsbAddress{
+        libusb_get_bus_number(device),
+        libusb_get_device_address(device)
+    };
+}
+
 QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
 {
     QString serial{"???"};
@@ -89,19 +98,47 @@ QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
     return serial;
 }
 
-std::vector<UsbDevice> listUsbDevices()
+bool lessByAddress(const UsbDevice &lhs, const UsbDevice &rhs)
+{
+    return lhs.address < rhs.address;
+}
+
+std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
+{
+    const auto interfaceResult = findQdbInterface(device);
+    if (!interfaceResult.first) {
+        // No QDB interface found, not a QDB device
+        return std::make_pair(false, UsbDevice{});
+    }
+
+    libusb_device_handle *handle;
+    int ret = libusb_open(device, &handle);
+    if (ret) {
+        qDebug() << "Could not open USB device for checking serial number:" << libusb_error_name(ret);
+        return std::make_pair(false, UsbDevice{});
+    }
+    ScopeGuard deviceGuard = [=]() {
+        libusb_close(handle);
+    };
+    const auto address = getAddress(device);
+    const auto serial = getSerialNumber(device, handle);
+
+    const UsbDevice usbDevice{serial, address, LibUsbDevice{device}, interfaceResult.second};
+    return std::make_pair(true, usbDevice);
+}
+
+std::vector<UsbDevice> makeUsbDevices()
 {
     if (!libUsbContext()) {
-        qDebug() << "Not initialized libusb in DeviceManager";
+        qDebug() << "Not initialized libusb in UsbDeviceEnumerator";
         return std::vector<UsbDevice>{};
     }
 
-    libusb_device **devicesParam;
-    ssize_t deviceCount = libusb_get_device_list(libUsbContext(), &devicesParam);
-    std::shared_ptr<libusb_device *> devices{devicesParam,
-                                              [](libusb_device **pointer) {
-                                                  libusb_free_device_list(pointer, 1);
-                                              }};
+    libusb_device **devices;
+    ssize_t deviceCount = libusb_get_device_list(libUsbContext(), &devices);
+    ScopeGuard deviceListGuard = [devices]() {
+        libusb_free_device_list(devices, 1);
+    };
 
     if (deviceCount < 0) {
         qCritical() << "USB devices could not be listed:" << libusb_error_name(deviceCount);
@@ -110,27 +147,73 @@ std::vector<UsbDevice> listUsbDevices()
 
     std::vector<UsbDevice> qdbDevices;
     for (int i = 0; i < deviceCount; ++i) {
-        libusb_device *device = devices.get()[i];
+        libusb_device *device = devices[i];
 
-        const auto interfaceResult = findQdbInterface(device);
-        if (!interfaceResult.first) {
-            // No QDB interface found, not a QDB device
-            continue;
-        }
-
-        libusb_device_handle *handle;
-        int ret = libusb_open(device, &handle);
-        if (ret) {
-            qDebug() << "Could not open USB device for checking serial number:" << libusb_error_name(ret);
-            continue;
-        }
-        ScopeGuard deviceGuard = [=]() {
-            libusb_close(handle);
-        };
-        const auto serial = getSerialNumber(device, handle);
-
-        const UsbDevice usbDevice{serial, LibUsbDevice{devices, i}, interfaceResult.second};
-        qdbDevices.push_back(usbDevice);
+        const auto result = makeUsbDeviceIfQdbDevice(device);
+        if (result.first)
+            qdbDevices.push_back(result.second);
     }
+
+    // Sort the vector by USB address to allow treatment as set
+    std::sort(qdbDevices.begin(), qdbDevices.end(), lessByAddress);
+
     return qdbDevices;
+}
+
+UsbDeviceEnumerator::UsbDeviceEnumerator()
+    : m_pollTimer{},
+      m_qdbDevices{}
+{
+
+}
+
+UsbDeviceEnumerator::~UsbDeviceEnumerator()
+{
+    if (m_pollTimer.isActive())
+        m_pollTimer.stop();
+}
+
+std::vector<UsbDevice> UsbDeviceEnumerator::listUsbDevices()
+{
+    pollQdbDevices();
+
+    return m_qdbDevices;
+}
+
+void UsbDeviceEnumerator::startMonitoring()
+{
+    QObject::connect(&m_pollTimer, &QTimer::timeout, this, &UsbDeviceEnumerator::pollQdbDevices);
+    m_pollTimer.start(1000);
+}
+
+void UsbDeviceEnumerator::stopMonitoring()
+{
+    m_pollTimer.stop();
+}
+
+void UsbDeviceEnumerator::pollQdbDevices()
+{
+    auto devices = makeUsbDevices();
+
+    if (m_pollTimer.isActive()) {
+        std::vector<UsbDevice> insertedDevices;
+        std::set_difference(devices.begin(), devices.end(),
+                            m_qdbDevices.begin(), m_qdbDevices.end(),
+                            std::back_inserter(insertedDevices),
+                            lessByAddress);
+
+        for (const auto &device : insertedDevices)
+            emit devicePluggedIn(device);
+
+        std::vector<UsbDevice> removedDevices;
+        std::set_difference(m_qdbDevices.begin(), m_qdbDevices.end(),
+                            devices.begin(), devices.end(),
+                            std::back_inserter(removedDevices),
+                            lessByAddress);
+
+        for (const auto &device : removedDevices)
+            emit deviceUnplugged(device.address);
+    }
+
+    m_qdbDevices = devices;
 }

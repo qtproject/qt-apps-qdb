@@ -22,7 +22,6 @@
 
 #include "libqdb/interruptsignalhandler.h"
 #include "libqdb/qdbconstants.h"
-#include "networkmanagercontrol.h"
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qcommandlineparser.h>
@@ -34,31 +33,8 @@
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qtimer.h>
-#include <QtDBus/QDBusObjectPath>
 #include <QtNetwork/qlocalserver.h>
 #include <QtNetwork/qlocalsocket.h>
-
-void configureUsbNetwork(const QString &serial, const QString &macAddress)
-{
-    qDebug() << "Configuring network for" << serial << "at" << macAddress;
-    NetworkManagerControl networkManager;
-    auto deviceResult = networkManager.findNetworkDeviceByMac(macAddress);
-    if (!deviceResult.isValid()) {
-        qWarning() << "Could not find network device" << macAddress;
-        return;
-    } else {
-        const auto networkCard = deviceResult.toString();
-        if (networkManager.isActivated(networkCard)) {
-            qDebug() << networkCard << "is activated";
-            if (networkManager.isDeviceUsingLinkLocal(networkCard)) {
-                qInfo() << networkCard << "is already using a link-local IP";
-                return;
-            }
-        }
-        if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, serial, macAddress))
-            qWarning() << "Could not setup network settings for the USB Ethernet interface";
-    }
-}
 
 int hostServer(QCoreApplication &app, const QCommandLineParser &parser)
 {
@@ -82,9 +58,7 @@ HostServer::HostServer(QObject *parent)
     : QObject{parent},
       m_localServer{},
       m_client{nullptr},
-      m_devices{},
-      m_deviceInfos{},
-      m_fetchIndex{-1}
+      m_deviceManager{}
 {
 
 }
@@ -92,7 +66,9 @@ HostServer::HostServer(QObject *parent)
 void HostServer::listen()
 {
 #ifdef Q_OS_UNIX
-    QFile::remove(QDir::tempPath() + qdbSocketName);
+    QString socketPath = QDir::cleanPath(QDir::tempPath()) + QChar{'/'};
+    socketPath += qdbSocketName;
+    QFile::remove(socketPath);
 #endif
     if (!m_localServer.listen(qdbSocketName)) {
         qCritical() << "Could not start listening with QLocalServer: "
@@ -102,6 +78,10 @@ void HostServer::listen()
     }
     connect(&m_localServer, &QLocalServer::newConnection, this, &HostServer::handleConnection);
     qDebug() << "Host server started listening.";
+
+    connect(&m_deviceManager, &DeviceManager::newDeviceInfo, this, &HostServer::handleNewDeviceInfo);
+    connect(&m_deviceManager, &DeviceManager::disconnectedDevice, this, &HostServer::handleDisconnectedDevice);
+    m_deviceManager.start();
 }
 
 void HostServer::close()
@@ -129,15 +109,14 @@ void HostServer::handleDisconnection()
     m_client = nullptr;
 }
 
-void HostServer::handleDeviceInformation(DeviceInformation deviceInfo)
+void HostServer::handleNewDeviceInfo(DeviceInformation info)
 {
-    m_deviceInfos.push_back(deviceInfo);
-    ++m_fetchIndex;
+    qDebug() << "New device information about" << info.serial;
+}
 
-    if (m_fetchIndex < m_devices.size())
-        fetchDeviceInformation();
-    else
-        finishFetching();
+void HostServer::handleDisconnectedDevice(QString serial)
+{
+    qDebug() << "Disconnected" << serial;
 }
 
 void HostServer::handleRequest()
@@ -147,48 +126,26 @@ void HostServer::handleRequest()
     const auto requestObject = request.object();
 
     if (requestObject["request"] == "devices") {
-        startFetching();
+        replyDeviceInformation();
     } else {
         qWarning() << "Got invalid request from client:" << requestBytes;
         m_client->disconnectFromServer();
     }
 }
 
-void HostServer::startFetching()
+void HostServer::replyDeviceInformation()
 {
-    m_devices = listUsbDevices();
-
-    qDebug() << "USB devices:";
-    for (const auto &device : m_devices) {
-        qDebug() << "    " << device.serial;
-    }
-
-    Q_ASSERT_X(m_fetchIndex == -1, "HostServer::startFetching", "handling concurrent requests not implemented"); // TODO
-    m_fetchIndex = 0;
-    m_deviceInfos.clear();
-    if (m_devices.empty())
-        finishFetching();
-    else
-        fetchDeviceInformation();
-}
-
-void HostServer::finishFetching()
-{
-    m_fetchIndex = -1;
-
-    qDebug() << "Configuring network for all devices";
-    for (const auto deviceInfo : m_deviceInfos)
-        configureUsbNetwork(deviceInfo.serial, deviceInfo.hostMac);
-
     QJsonObject obj;
     QJsonArray infoArray;
-    for (const auto deviceInfo : m_deviceInfos) {
+    const auto deviceInfos = m_deviceManager.listDevices();
+    for (const auto &deviceInfo : deviceInfos) {
         QJsonObject info;
         info["serial"] = deviceInfo.serial;
         info["hostMac"] = deviceInfo.hostMac;
         info["ipAddress"] = deviceInfo.ipAddress;
         infoArray << info;
     }
+
     obj["devices"] = infoArray;
     const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
 
@@ -199,15 +156,5 @@ void HostServer::finishFetching()
     m_client->write(response);
     m_client->waitForBytesWritten();
     m_client->disconnectFromServer();
-    qDebug() << "Replied to the client";
-}
-
-void HostServer::fetchDeviceInformation()
-{
-    qDebug() << "Fetching device information for" << m_fetchIndex;
-    auto *fetcher = new DeviceInformationFetcher{m_devices[m_fetchIndex]};
-    connect(fetcher, &DeviceInformationFetcher::fetched, fetcher, &QObject::deleteLater);
-    connect(fetcher, &DeviceInformationFetcher::fetched, this, &HostServer::handleDeviceInformation);
-
-    fetcher->fetch();
+    qDebug() << "Replied device information to the client";
 }

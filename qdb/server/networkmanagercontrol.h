@@ -27,6 +27,8 @@ QT_BEGIN_NAMESPACE
 class QDBusObjectPath;
 QT_END_NAMESPACE
 
+void configureUsbNetwork(const QString &serial, const QString &macAddress);
+
 class NetworkManagerControl
 {
 public:

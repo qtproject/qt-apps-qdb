@@ -20,7 +20,7 @@
 ******************************************************************************/
 #include "usbconnectionreader.h"
 
-#include "protocol/protocol.h"
+#include "libqdb/protocol/protocol.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qthread.h>

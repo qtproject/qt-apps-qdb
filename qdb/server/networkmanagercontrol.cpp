@@ -33,6 +33,28 @@ const QString networkManagerInterfaceName = "org.freedesktop.NetworkManager";
 QVariant connectionSettings(QDBusConnection &bus, const QDBusObjectPath &connectionPath);
 SettingsMap demarshallSettings(const QDBusArgument &settingsArgument);
 
+void configureUsbNetwork(const QString &serial, const QString &macAddress)
+{
+    qDebug() << "Configuring network for" << serial << "at" << macAddress;
+    NetworkManagerControl networkManager;
+    auto deviceResult = networkManager.findNetworkDeviceByMac(macAddress);
+    if (!deviceResult.isValid()) {
+        qWarning() << "Could not find network device" << macAddress;
+        return;
+    } else {
+        const auto networkCard = deviceResult.toString();
+        if (networkManager.isActivated(networkCard)) {
+            qDebug() << networkCard << "is activated";
+            if (networkManager.isDeviceUsingLinkLocal(networkCard)) {
+                qInfo() << networkCard << "is already using a link-local IP";
+                return;
+            }
+        }
+        if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, serial, macAddress))
+            qWarning() << "Could not setup network settings for the USB Ethernet interface";
+    }
+}
+
 QVariant connectionMac(QDBusConnection &bus, const QDBusObjectPath &connectionPath)
 {
     const auto result = connectionSettings(bus, connectionPath);

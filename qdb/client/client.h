@@ -21,7 +21,11 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <QtGlobal>
+
+QT_BEGIN_NAMESPACE
 class QCoreApplication;
+QT_END_NAMESPACE
 
 int askDevices(QCoreApplication &app);
 

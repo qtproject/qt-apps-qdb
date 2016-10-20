@@ -22,7 +22,7 @@
 #define DEVICEINFORMATIONFETCHER_H
 
 #include "connection.h"
-#include "libqdb/usb/usbdevice.h"
+#include "usb-host/usbdevice.h"
 
 #include <QtCore/qobject.h>
 
@@ -31,7 +31,11 @@ struct DeviceInformation
     QString serial;
     QString hostMac;
     QString ipAddress;
+    UsbAddress usbAddress;
 };
+
+bool operator==(const DeviceInformation &lhs, const DeviceInformation &rhs);
+bool operator!=(const DeviceInformation &lhs, const DeviceInformation &rhs);
 
 class DeviceInformationFetcher : public QObject
 {
@@ -50,6 +54,7 @@ private slots:
 
 private:
     Connection *m_connection; // owned by this class, deletion set up in constructor
+    UsbAddress m_deviceAddress;
     bool m_connected;
 };
 

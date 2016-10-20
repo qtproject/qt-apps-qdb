@@ -18,10 +18,9 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef USBMANAGER_H
-#define USBMANAGER_H
+#ifndef USBCONNECTION_H
+#define USBCONNECTION_H
 
-#include "../libqdb_global.h"
 #include "usbdevice.h"
 
 class UsbConnectionReader;
@@ -38,7 +37,7 @@ QT_END_NAMESPACE
 struct libusb_device;
 struct libusb_device_handle;
 
-class LIBQDBSHARED_EXPORT UsbConnection : public QIODevice
+class UsbConnection : public QIODevice
 {
     Q_OBJECT
 public:
@@ -66,4 +65,4 @@ private:
     QQueue<QByteArray> m_reads;
 };
 
-#endif // USBMANAGER_H
+#endif // USBCONNECTION_H

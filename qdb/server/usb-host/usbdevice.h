@@ -30,29 +30,37 @@
 
 struct libusb_device;
 
+// Class that wraps the libusb reference count incrementing and decrementing for
+// a libusb_device
 class LibUsbDevice {
 public:
-    LibUsbDevice(std::shared_ptr<libusb_device *> devices, int index)
-        : m_deviceList{devices},
-          m_index{index}
+    LibUsbDevice();
+    LibUsbDevice(libusb_device *device);
+    LibUsbDevice(const LibUsbDevice &rhs);
+    LibUsbDevice(LibUsbDevice&& rhs);
+    ~LibUsbDevice();
 
-    {
-    }
+    LibUsbDevice &operator=(const LibUsbDevice &rhs);
 
-    libusb_device *pointer()
-    {
-        return m_deviceList.get()[m_index];
-    }
+    libusb_device *pointer();
 
 private:
-    std::shared_ptr<libusb_device *> m_deviceList;
-    int m_index;
-
+    libusb_device *m_device;
 };
+
+struct UsbAddress
+{
+    uint8_t busNumber;
+    uint8_t deviceAddress;
+};
+
+bool operator<(const UsbAddress &lhs, const UsbAddress &rhs);
+bool operator==(const UsbAddress &lhs, const UsbAddress &rhs);
 
 struct UsbDevice
 {
     QString serial;
+    UsbAddress address;
     LibUsbDevice usbDevice;
     UsbInterfaceInfo interfaceInfo;
 };

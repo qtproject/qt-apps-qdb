@@ -18,47 +18,43 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef HOSTSERVER_H
-#define HOSTSERVER_H
+#ifndef DEVICEMANAGER_H
+#define DEVICEMANAGER_H
 
 #include "deviceinformationfetcher.h"
-#include "devicemanager.h"
+#include "usb-host/usbdeviceenumerator.h"
 
 #include <QtCore/qobject.h>
-#include <QtNetwork/qlocalserver.h>
-QT_BEGIN_NAMESPACE
-class QCoreApplication;
-class QCommandLineParser;
-QT_END_NAMESPACE
+#include <QtCore/qqueue.h>
 
-int hostServer(QCoreApplication &app, const QCommandLineParser &parser);
-
-class HostServer : public QObject
+class DeviceManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit HostServer(QObject *parent = nullptr);
-    void listen();
+    explicit DeviceManager(QObject *parent = nullptr);
+
+    std::vector<DeviceInformation> listDevices();
+    void start();
 
 signals:
-    void closed();
-
-public slots:
-    void close();
+    void newDeviceInfo(DeviceInformation info);
+    void disconnectedDevice(QString serial);
 
 private slots:
-    void handleConnection();
-    void handleDisconnection();
-    void handleNewDeviceInfo(DeviceInformation info);
-    void handleDisconnectedDevice(QString serial);
-    void handleRequest();
+    void handleDeviceInformation(DeviceInformation deviceInfo);
+    void handlePluggedInDevice(UsbDevice device);
+    void handleUnpluggedDevice(UsbAddress address);
 
 private:
-    void replyDeviceInformation();
+    void fetchDeviceInformation(UsbDevice device);
+    void fetchIncomplete();
 
-    QLocalServer m_localServer;
-    QLocalSocket *m_client; // owned by this class, deleted in handleDisconnection()
-    DeviceManager m_deviceManager;
+    UsbDeviceEnumerator m_deviceEnumerator;
+    QQueue<UsbDevice> m_newDevices;
+    QQueue<UsbDevice> m_incompleteDevices;
+    UsbDevice m_fetchingDevice;
+    bool m_fetching;
+    std::vector<DeviceInformation> m_deviceInfos;
 };
 
-#endif // HOSTSERVER_H
+#endif // DEVICEMANAGER_H

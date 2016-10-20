@@ -6,7 +6,28 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-SOURCES += streamtest.cpp
+unix {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += libusb-1.0
+}
+win32 {
+    LIBS += -llibusb-1.0
+}
+
+HEADERS += \
+    ../qdb/server/usb-host/usbcommon.h \
+    ../qdb/server/usb-host/usbconnection.h \
+    ../qdb/server/usb-host/usbconnectionreader.h \
+    ../qdb/server/usb-host/usbdevice.h \
+    ../qdb/server/usb-host/usbdeviceenumerator.h \
+
+SOURCES += \
+    ../qdb/server/usb-host/libusbcontext.cpp \
+    ../qdb/server/usb-host/usbconnection.cpp \
+    ../qdb/server/usb-host/usbconnectionreader.cpp \
+    ../qdb/server/usb-host/usbdevice.cpp \
+    ../qdb/server/usb-host/usbdeviceenumerator.cpp \
+    streamtest.cpp \
 
 INCLUDEPATH += $$PWD/../
 

@@ -1,4 +1,3 @@
-message("Running libusb10.pro")
 unix {
     CONFIG += link_pkgconfig
     PKGCONFIG += libusb-1.0
