@@ -1,17 +1,15 @@
-TEMPLATE = subdirs
-
 load(configure)
-!qtCompileTest(libusb10): error("Could not find libusb-1.0, which is mandatory")
+!daemon_only:!qtCompileTest(libusb10): error("Could not find libusb-1.0, which is mandatory for host parts of QDB")
+
+load(qt_parts)
 
 SUBDIRS += libqdb
+sub_tests.depends += libqdb
 
 !daemon_only {
-    SUBDIRS += \
-        qdb \
-        tests \
+    SUBDIRS += qdb
 
     qdb.depends += libqdb
-    tests.depends += libqdb
 }
 
 unix {
