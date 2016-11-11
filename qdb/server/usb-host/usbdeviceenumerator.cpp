@@ -184,6 +184,7 @@ void UsbDeviceEnumerator::startMonitoring()
 {
     QObject::connect(&m_pollTimer, &QTimer::timeout, this, &UsbDeviceEnumerator::pollQdbDevices);
     m_pollTimer.start(1000);
+    pollQdbDevices();
 }
 
 void UsbDeviceEnumerator::stopMonitoring()

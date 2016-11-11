@@ -25,6 +25,7 @@ HEADERS += \
     server/echoservice.h \
     server/handshakeservice.h \
     server/hostserver.h \
+    server/logging.h \
     server/networkmanagercontrol.h \
     server/service.h \
     server/usb-host/usbcommon.h \
@@ -42,6 +43,7 @@ SOURCES += \
     server/echoservice.cpp \
     server/handshakeservice.cpp \
     server/hostserver.cpp \
+    server/logging.cpp \
     server/networkmanagercontrol.cpp \
     server/service.cpp \
     server/usb-host/libusbcontext.cpp \

@@ -22,6 +22,7 @@
 
 #include "libqdb/interruptsignalhandler.h"
 #include "libqdb/qdbconstants.h"
+#include "logging.h"
 
 #include <QtCore/qcoreapplication.h>
 #include <QtCore/qcommandlineparser.h>
@@ -36,8 +37,10 @@
 #include <QtNetwork/qlocalserver.h>
 #include <QtNetwork/qlocalsocket.h>
 
-int hostServer(QCoreApplication &app, const QCommandLineParser &parser)
+int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser)
 {
+    setupLogging();
+
     QString filterRules;
     if (!parser.isSet("debug-transport"))
         filterRules.append("transport=false\n");
@@ -86,6 +89,7 @@ void HostServer::listen()
 
 void HostServer::close()
 {
+    qDebug() << "Shutting QDB host server down";
     m_localServer.close();
     emit closed();
 }
@@ -127,6 +131,8 @@ void HostServer::handleRequest()
 
     if (requestObject["request"] == "devices") {
         replyDeviceInformation();
+    } else if (requestObject["request"] == "stop-server") {
+        stopServer();
     } else {
         qWarning() << "Got invalid request from client:" << requestBytes;
         m_client->disconnectFromServer();
@@ -157,4 +163,22 @@ void HostServer::replyDeviceInformation()
     m_client->waitForBytesWritten();
     m_client->disconnectFromServer();
     qDebug() << "Replied device information to the client";
+}
+
+void HostServer::stopServer()
+{
+    QJsonObject obj;
+    obj["response"] = "stopping";
+
+    const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
+
+    if (!m_client || !m_client->isWritable()) {
+        qWarning() << "Could not reply to the client";
+        return;
+    }
+    m_client->write(response);
+    m_client->waitForBytesWritten();
+    m_client->disconnectFromServer();
+    qDebug() << "Acknowledged stopping";
+    close();
 }

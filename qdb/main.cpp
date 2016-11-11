@@ -31,13 +31,18 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app{argc, argv};
 
+    QStringList clientCommands = {"devices", "stop-server"};
+
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addOption({"debug-transport", "Print each message that is sent. (Only server process)"});
     parser.addOption({"debug-connection", "Show enqueued messages. (Only server process)"});
+    auto commandList = clientCommands;
+    commandList << "server";
+    std::sort(commandList.begin(), commandList.end());
     parser.addPositionalArgument("command",
                                  "Subcommand of qdb to run. Possible commands are: "
-                                    "devices, server");
+                                  + commandList.join(", "));
     parser.process(app);
 
     const QStringList arguments = parser.positionalArguments();
@@ -45,10 +50,10 @@ int main(int argc, char *argv[])
         parser.showHelp(1);
     const QString command = arguments[0];
 
-    if (command == "devices") {
-        return askDevices(app);
-    } else if (command == "server") {
-        return hostServer(app, parser);
+    if (command == "server") {
+        return execHostServer(app, parser);
+    } else if (clientCommands.contains(command)) {
+        return execClient(app, command);
     } else {
         std::cerr << "Unrecognized command: " << qUtf8Printable(command) << std::endl;
         return 1;

@@ -18,37 +18,9 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef QDB_LOGGING_H
+#define QDB_LOGGING_H
 
-#include <QtNetwork/qlocalsocket.h>
-QT_BEGIN_NAMESPACE
-class QCoreApplication;
-QT_END_NAMESPACE
+void setupLogging();
 
-#include <memory>
-
-int execClient(const QCoreApplication &app, const QString &command);
-
-class Client : public QObject
-{
-    Q_OBJECT
-public:
-    Client();
-
-public slots:
-    void askDevices();
-    void stopServer();
-
-private:
-    void handleDevicesConnection();
-    void handleDevicesError(QLocalSocket::LocalSocketError error);
-    void handleStopConnection();
-    void handleStopError(QLocalSocket::LocalSocketError error);
-    void shutdown(int exitCode);
-
-    std::unique_ptr<QLocalSocket> m_socket;
-    bool m_triedToStart;
-};
-
-#endif // CLIENT_H
+#endif // QDB_LOGGING_H

@@ -31,7 +31,7 @@ class QCoreApplication;
 class QCommandLineParser;
 QT_END_NAMESPACE
 
-int hostServer(QCoreApplication &app, const QCommandLineParser &parser);
+int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser);
 
 class HostServer : public QObject
 {
@@ -55,6 +55,7 @@ private slots:
 
 private:
     void replyDeviceInformation();
+    void stopServer();
 
     QLocalServer m_localServer;
     QLocalSocket *m_client; // owned by this class, deleted in handleDisconnection()
