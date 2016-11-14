@@ -25,6 +25,7 @@ HEADERS += \
     server/echoservice.h \
     server/handshakeservice.h \
     server/hostserver.h \
+    server/hostservlet.h \
     server/logging.h \
     server/networkmanagercontrol.h \
     server/service.h \
@@ -43,6 +44,7 @@ SOURCES += \
     server/echoservice.cpp \
     server/handshakeservice.cpp \
     server/hostserver.cpp \
+    server/hostservlet.cpp \
     server/logging.cpp \
     server/networkmanagercontrol.cpp \
     server/service.cpp \

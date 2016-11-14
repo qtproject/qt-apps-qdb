@@ -18,46 +18,44 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef HOSTSERVER_H
-#define HOSTSERVER_H
+#ifndef HOSTSERVLET_H
+#define HOSTSERVLET_H
 
-#include "deviceinformationfetcher.h"
 #include "devicemanager.h"
-#include "hostservlet.h"
 
 #include <QtCore/qobject.h>
-#include <QtNetwork/qlocalserver.h>
 QT_BEGIN_NAMESPACE
-class QCoreApplication;
-class QCommandLineParser;
+class QLocalSocket;
 QT_END_NAMESPACE
 
-int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser);
+using ServletId = uint32_t;
 
-class HostServer : public QObject
+// Takes ownership of the passed QLocalSocket
+class HostServlet : public QObject
 {
     Q_OBJECT
 public:
-    explicit HostServer(QObject *parent = nullptr);
+    HostServlet(QLocalSocket *socket, DeviceManager &deviceManager);
+    ~HostServlet();
 
-    void listen();
+    void close();
+    ServletId id() const;
 
 signals:
-    void closed();
+    void done(ServletId id);
+    void serverStopRequested();
 
 public slots:
-    void close();
-
-private slots:
-    void handleClient();
-    void handleDoneClient(ServletId servletId);
-    void handleNewDeviceInfo(DeviceInformation info);
-    void handleDisconnectedDevice(QString serial);
+    void handleDisconnection();
+    void handleRequest();
 
 private:
-    QLocalServer m_localServer;
-    std::list<HostServlet> m_servlets;
-    DeviceManager m_deviceManager;
+    void replyDeviceInformation();
+    void stopServer();
+
+    ServletId m_id;
+    QLocalSocket *m_socket;
+    DeviceManager &m_deviceManager;
 };
 
-#endif // HOSTSERVER_H
+#endif // HOSTSERVLET_H

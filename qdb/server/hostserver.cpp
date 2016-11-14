@@ -34,7 +34,6 @@
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qstring.h>
 #include <QtCore/qtimer.h>
-#include <QtNetwork/qlocalserver.h>
 #include <QtNetwork/qlocalsocket.h>
 
 int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser)
@@ -60,7 +59,7 @@ int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser
 HostServer::HostServer(QObject *parent)
     : QObject{parent},
       m_localServer{},
-      m_client{nullptr},
+      m_servlets{},
       m_deviceManager{}
 {
 
@@ -79,7 +78,7 @@ void HostServer::listen()
         close();
         return;
     }
-    connect(&m_localServer, &QLocalServer::newConnection, this, &HostServer::handleConnection);
+    connect(&m_localServer, &QLocalServer::newConnection, this, &HostServer::handleClient);
     qDebug() << "Host server started listening.";
 
     connect(&m_deviceManager, &DeviceManager::newDeviceInfo, this, &HostServer::handleNewDeviceInfo);
@@ -91,26 +90,39 @@ void HostServer::close()
 {
     qDebug() << "Shutting QDB host server down";
     m_localServer.close();
+    while (!m_servlets.empty())
+        m_servlets.front().close(); // closing results in being erased from the list
     emit closed();
 }
 
-void HostServer::handleConnection()
+void HostServer::handleClient()
 {
-    Q_ASSERT_X(!m_client, "HostServer::handleConnection", "concurrent connections are not implemented"); // TODO
-    m_client = m_localServer.nextPendingConnection();
-    if (!m_client) {
+    QLocalSocket *socket = m_localServer.nextPendingConnection();
+    if (!socket) {
         qCritical() << "Did not get a connection from client";
         close();
         return;
     }
-    QObject::connect(m_client, &QLocalSocket::disconnected, this, &HostServer::handleDisconnection);
-    QObject::connect(m_client, &QIODevice::readyRead, this, &HostServer::handleRequest);
+    m_servlets.emplace_back(socket, m_deviceManager);
+    auto servlet = &m_servlets.back();
+
+    connect(socket, &QLocalSocket::disconnected, servlet, &HostServlet::handleDisconnection);
+    connect(socket, &QIODevice::readyRead, servlet, &HostServlet::handleRequest);
+
+    connect(servlet, &HostServlet::done, this, &HostServer::handleDoneClient);
+    connect(servlet, &HostServlet::serverStopRequested, this, &HostServer::close);
 }
 
-void HostServer::handleDisconnection()
+void HostServer::handleDoneClient(ServletId servletId)
 {
-    m_client->deleteLater();
-    m_client = nullptr;
+    auto iter = std::find_if(m_servlets.begin(), m_servlets.end(),
+                             [=](const HostServlet &servlet) {
+                                 return servlet.id() == servletId;
+                             });
+    if (iter != m_servlets.end())
+        m_servlets.erase(iter);
+    else
+        qWarning() << "Could not find done servlet" << servletId << "when trying to remove it";
 }
 
 void HostServer::handleNewDeviceInfo(DeviceInformation info)
@@ -121,64 +133,4 @@ void HostServer::handleNewDeviceInfo(DeviceInformation info)
 void HostServer::handleDisconnectedDevice(QString serial)
 {
     qDebug() << "Disconnected" << serial;
-}
-
-void HostServer::handleRequest()
-{
-    const auto requestBytes = m_client->readLine(1000);
-    const auto request = QJsonDocument::fromJson(requestBytes);
-    const auto requestObject = request.object();
-
-    if (requestObject["request"] == "devices") {
-        replyDeviceInformation();
-    } else if (requestObject["request"] == "stop-server") {
-        stopServer();
-    } else {
-        qWarning() << "Got invalid request from client:" << requestBytes;
-        m_client->disconnectFromServer();
-    }
-}
-
-void HostServer::replyDeviceInformation()
-{
-    QJsonObject obj;
-    QJsonArray infoArray;
-    const auto deviceInfos = m_deviceManager.listDevices();
-    for (const auto &deviceInfo : deviceInfos) {
-        QJsonObject info;
-        info["serial"] = deviceInfo.serial;
-        info["hostMac"] = deviceInfo.hostMac;
-        info["ipAddress"] = deviceInfo.ipAddress;
-        infoArray << info;
-    }
-
-    obj["devices"] = infoArray;
-    const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
-
-    if (!m_client || !m_client->isWritable()) {
-        qWarning() << "Could not reply to the client";
-        return;
-    }
-    m_client->write(response);
-    m_client->waitForBytesWritten();
-    m_client->disconnectFromServer();
-    qDebug() << "Replied device information to the client";
-}
-
-void HostServer::stopServer()
-{
-    QJsonObject obj;
-    obj["response"] = "stopping";
-
-    const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
-
-    if (!m_client || !m_client->isWritable()) {
-        qWarning() << "Could not reply to the client";
-        return;
-    }
-    m_client->write(response);
-    m_client->waitForBytesWritten();
-    m_client->disconnectFromServer();
-    qDebug() << "Acknowledged stopping";
-    close();
 }
