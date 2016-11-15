@@ -19,6 +19,7 @@ win32 {
 
 HEADERS += \
     client/client.h \
+    hostmessages.h \
     server/connection.h \
     server/deviceinformationfetcher.h \
     server/devicemanager.h \

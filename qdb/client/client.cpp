@@ -20,6 +20,7 @@
 ******************************************************************************/
 #include "client.h"
 
+#include "hostmessages.h"
 #include "libqdb/make_unique.h"
 #include "libqdb/qdbconstants.h"
 
@@ -31,6 +32,8 @@
 #include <QtNetwork/qlocalsocket.h>
 
 #include <iostream>
+
+const int startupDelay = 500; // time in ms to wait for host server startup before retrying
 
 void forkHostServer()
 {
@@ -47,6 +50,8 @@ int execClient(const QCoreApplication &app, const QString &command)
         client.askDevices();
     else if (command == "stop-server")
         client.stopServer();
+    else if (command == "watch-devices")
+        client.watchDevices();
     else
         qFatal("Unknown command %s in execClient", qUtf8Printable(command));
     return app.exec();
@@ -61,25 +66,22 @@ Client::Client()
 
 void Client::askDevices()
 {
-    m_socket = make_unique<QLocalSocket>();
-    connect(m_socket.get(), &QLocalSocket::connected, this, &Client::handleDevicesConnection);
-    connect(m_socket.get(), QOverload<QLocalSocket::LocalSocketError>::of(&QLocalSocket::error),
-            this, &Client::handleDevicesError);
-    m_socket->connectToServer(qdbSocketName);
+    setupSocketAndConnect(&Client::handleDevicesConnection, &Client::handleDevicesError);
 }
 
 void Client::stopServer()
 {
-    m_socket = make_unique<QLocalSocket>();
-    connect(m_socket.get(), &QLocalSocket::connected, this, &Client::handleStopConnection);
-    connect(m_socket.get(), QOverload<QLocalSocket::LocalSocketError>::of(&QLocalSocket::error),
-            this, &Client::handleStopError);
-    m_socket->connectToServer(qdbSocketName);
+    setupSocketAndConnect(&Client::handleStopConnection, &Client::handleStopError);
+}
+
+void Client::watchDevices()
+{
+    setupSocketAndConnect(&Client::handleWatchConnection, &Client::handleWatchError);
 }
 
 void Client::handleDevicesConnection()
 {
-    m_socket->write("{\"request\":\"devices\"}");
+    m_socket->write(createRequest(RequestType::Devices));
     if (!m_socket->waitForReadyRead()) {
         std::cerr << "Could not read response from QDB host server\n";
         shutdown(1);
@@ -114,26 +116,26 @@ void Client::handleDevicesError(QLocalSocket::LocalSocketError error)
     std::cout << "Starting QDB host server\n";
     m_triedToStart = true;
     forkHostServer();
-    QTimer::singleShot(500, this, &Client::askDevices);
+    QTimer::singleShot(startupDelay, this, &Client::askDevices);
 }
 
 void Client::handleStopConnection()
 {
-    m_socket->write("{\"request\":\"stop-server\"}");
+    m_socket->write(createRequest(RequestType::StopServer));
     if (!m_socket->waitForReadyRead()) {
         std::cerr << "Could not read response from QDB host server\n";
         shutdown(1);
         return;
     }
 
-    const auto response = m_socket->readLine();
-    const auto document = QJsonDocument::fromJson(response);
+    const auto responseBytes = m_socket->readLine();
+    const auto response = QJsonDocument::fromJson(responseBytes).object();
 
-    if (document.object()["response"] == "stopping") {
+    if (responseType(response) == ResponseType::Stopping) {
         std::cout << "Stopped server\n";
         shutdown(0);
     } else {
-        std::cerr << "Unexpected response: " << document.toJson().data() << std::endl;
+        std::cerr << "Unexpected response: " << qUtf8Printable(responseBytes) << std::endl;
         shutdown(1);
     }
 }
@@ -145,6 +147,60 @@ void Client::handleStopError(QLocalSocket::LocalSocketError error)
 
     std::cerr << "Could not connect to QDB host server, perhaps no server was running?\n";
     shutdown(1);
+}
+
+void Client::handleWatchConnection()
+{
+    connect(m_socket.get(), &QIODevice::readyRead, this, &Client::handleWatchMessage);
+    m_socket->write(createRequest(RequestType::WatchDevices));
+}
+
+void Client::handleWatchError(QLocalSocket::LocalSocketError error)
+{
+    if (error == QLocalSocket::PeerClosedError)
+        return;
+    if (error != QLocalSocket::ServerNotFoundError &&
+            error != QLocalSocket::ConnectionRefusedError) {
+        std::cerr << "Unexpected QLocalSocket error:" << qUtf8Printable(m_socket->errorString())
+                  << std::endl;
+        shutdown(1);
+        return;
+    }
+
+    if (m_triedToStart) {
+        std::cerr << "Could not connect QDB host server even after trying to start it\n";
+        shutdown(1);
+        return;
+    }
+    std::cout << "Starting QDB host server\n";
+    m_triedToStart = true;
+    forkHostServer();
+    QTimer::singleShot(startupDelay, this, &Client::watchDevices);
+}
+
+void Client::handleWatchMessage()
+{
+    while (m_socket->bytesAvailable() > 0) {
+        const auto responseBytes = m_socket->readLine();
+        const auto document = QJsonDocument::fromJson(responseBytes);
+
+        std::cout << document.toJson().data() << std::endl;
+
+        const auto type = responseType(document.object());
+        if (type != ResponseType::NewDevice && type != ResponseType::DisconnectedDevice) {
+            qDebug() << "Shutting down due to unexpected response:" << responseBytes;
+            shutdown(0);
+        }
+    }
+}
+
+void Client::setupSocketAndConnect(Client::ConnectedSlot handleConnection, Client::ErrorSlot handleError)
+{
+    m_socket = make_unique<QLocalSocket>();
+    connect(m_socket.get(), &QLocalSocket::connected, this, handleConnection);
+    connect(m_socket.get(), QOverload<QLocalSocket::LocalSocketError>::of(&QLocalSocket::error),
+            this, handleError);
+    m_socket->connectToServer(qdbSocketName);
 }
 
 void Client::shutdown(int exitCode)

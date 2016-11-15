@@ -39,12 +39,20 @@ public:
 public slots:
     void askDevices();
     void stopServer();
+    void watchDevices();
 
 private:
+    using ConnectedSlot = void (Client::*)();
+    using ErrorSlot = void (Client::*)(QLocalSocket::LocalSocketError);
+
     void handleDevicesConnection();
     void handleDevicesError(QLocalSocket::LocalSocketError error);
     void handleStopConnection();
     void handleStopError(QLocalSocket::LocalSocketError error);
+    void handleWatchConnection();
+    void handleWatchError(QLocalSocket::LocalSocketError error);
+    void handleWatchMessage();
+    void setupSocketAndConnect(ConnectedSlot handleConnection, ErrorSlot handleError);
     void shutdown(int exitCode);
 
     std::unique_ptr<QLocalSocket> m_socket;

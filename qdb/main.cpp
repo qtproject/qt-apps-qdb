@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app{argc, argv};
 
-    QStringList clientCommands = {"devices", "stop-server"};
+    QStringList clientCommands = {"devices", "stop-server", "watch-devices"};
 
     QCommandLineParser parser;
     parser.addHelpOption();

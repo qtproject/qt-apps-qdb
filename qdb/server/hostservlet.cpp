@@ -20,10 +20,20 @@
 ******************************************************************************/
 #include "hostservlet.h"
 
+#include "hostmessages.h"
+
 #include <QtCore/qjsonarray.h>
-#include <QtCore/qjsondocument.h>
 #include <QtCore/qjsonobject.h>
 #include <QtNetwork/qlocalsocket.h>
+
+QJsonObject deviceInformationToJsonObject(const DeviceInformation &deviceInfo)
+{
+    QJsonObject info;
+    info["serial"] = deviceInfo.serial;
+    info["hostMac"] = deviceInfo.hostMac;
+    info["ipAddress"] = deviceInfo.ipAddress;
+    return info;
+}
 
 ServletId newServletId()
 {
@@ -65,56 +75,93 @@ void HostServlet::handleRequest()
 {
     const auto requestBytes = m_socket->readLine();
     const auto request = QJsonDocument::fromJson(requestBytes);
-    const auto requestObject = request.object();
+    const auto type = requestType(request.object());
 
-    if (requestObject["request"] == "devices") {
-        replyDeviceInformation();
-    } else if (requestObject["request"] == "stop-server") {
+    switch (type) {
+    case RequestType::Devices:
+        replyDevices();
+        break;
+    case RequestType::WatchDevices:
+        startWatchingDevices();
+        break;
+    case RequestType::StopServer:
         stopServer();
-    } else {
+        break;
+    case RequestType::Unknown:
         qWarning() << "Got invalid request from client:" << requestBytes;
-        m_socket->write(QByteArray{"{\"response\":\"invalid-request\""});
+        const QJsonObject response = initializeResponse(ResponseType::InvalidRequest);
+        m_socket->write(serialiseResponse(response));
         close();
+        break;
     }
 }
 
-void HostServlet::replyDeviceInformation()
+void HostServlet::replyDevices()
 {
-    QJsonObject obj;
     QJsonArray infoArray;
     const auto deviceInfos = m_deviceManager.listDevices();
-    for (const auto &deviceInfo : deviceInfos) {
-        QJsonObject info;
-        info["serial"] = deviceInfo.serial;
-        info["hostMac"] = deviceInfo.hostMac;
-        info["ipAddress"] = deviceInfo.ipAddress;
-        infoArray << info;
-    }
+    for (const auto &deviceInfo : deviceInfos)
+        infoArray << deviceInformationToJsonObject(deviceInfo);
 
-    obj["devices"] = infoArray;
-    const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
+    QJsonObject response = initializeResponse(ResponseType::Devices);
+    response["devices"] = infoArray;
 
     if (!m_socket || !m_socket->isWritable()) {
         qWarning() << "Could not reply to the client";
         return;
     }
-    m_socket->write(response);
+    m_socket->write(serialiseResponse(response));
     qDebug() << "Replied device information to the client";
     close();
 }
 
-void HostServlet::stopServer()
+void HostServlet::replyNewDevice(const DeviceInformation &deviceInfo)
 {
-    QJsonObject obj;
-    obj["response"] = "stopping";
-
-    const QByteArray response = QJsonDocument{obj}.toJson(QJsonDocument::Compact);
+    QJsonObject response = initializeResponse(ResponseType::NewDevice);
+    response["device"] = deviceInformationToJsonObject(deviceInfo);
 
     if (!m_socket || !m_socket->isWritable()) {
         qWarning() << "Could not reply to the client";
         return;
     }
-    m_socket->write(response);
+    m_socket->write(serialiseResponse(response));
+    qDebug() << "Sent new device information to the client";
+}
+
+void HostServlet::replyDisconnectedDevice(const QString &serial)
+{
+    QJsonObject response = initializeResponse(ResponseType::DisconnectedDevice);
+    response["serial"] = serial;
+
+    if (!m_socket || !m_socket->isWritable()) {
+        qWarning() << "Could not reply to the client";
+        return;
+    }
+    m_socket->write(serialiseResponse(response));
+    qDebug() << "Sent disconnected device information to the client";
+}
+
+void HostServlet::startWatchingDevices()
+{
+    qDebug() << "Starting to watch devices";
+    connect(&m_deviceManager, &DeviceManager::newDeviceInfo, this, &HostServlet::replyNewDevice);
+    connect(&m_deviceManager, &DeviceManager::disconnectedDevice, this, &HostServlet::replyDisconnectedDevice);
+
+    const auto deviceInfos = m_deviceManager.listDevices();
+    for (const auto &deviceInfo : deviceInfos)
+        replyNewDevice(deviceInfo);
+    qDebug() << "Reported initial devices to watcher";
+}
+
+void HostServlet::stopServer()
+{
+    QJsonObject response = initializeResponse(ResponseType::Stopping);
+
+    if (!m_socket || !m_socket->isWritable()) {
+        qWarning() << "Could not reply to the client";
+        return;
+    }
+    m_socket->write(serialiseResponse(response));
     qDebug() << "Acknowledged stopping";
 
     emit serverStopRequested();

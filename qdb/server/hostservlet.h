@@ -50,7 +50,10 @@ public slots:
     void handleRequest();
 
 private:
-    void replyDeviceInformation();
+    void replyDevices();
+    void replyNewDevice(const DeviceInformation &deviceInfo);
+    void replyDisconnectedDevice(const QString &serial);
+    void startWatchingDevices();
     void stopServer();
 
     ServletId m_id;

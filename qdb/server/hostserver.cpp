@@ -24,16 +24,10 @@
 #include "libqdb/qdbconstants.h"
 #include "logging.h"
 
-#include <QtCore/qcoreapplication.h>
 #include <QtCore/qcommandlineparser.h>
 #include <QtCore/qdir.h>
 #include <QtCore/qfile.h>
 #include <QtCore/qloggingcategory.h>
-#include <QtCore/qjsonarray.h>
-#include <QtCore/qjsondocument.h>
-#include <QtCore/qjsonobject.h>
-#include <QtCore/qstring.h>
-#include <QtCore/qtimer.h>
 #include <QtNetwork/qlocalsocket.h>
 
 int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser)
