@@ -20,6 +20,7 @@
 ******************************************************************************/
 #include "usbgadget.h"
 
+#include "configuration.h"
 #include "libqdb/make_unique.h"
 #include "libqdb/qdbconstants.h"
 #include "usb-gadget/usbgadgetreader.h"
@@ -105,12 +106,10 @@ const struct {
     },
 };
 
-const QString usbFunctionFsPath = "/dev/usb-ffs/qdb/";
-
 UsbGadget::UsbGadget()
-    : m_controlEndpoint(usbFunctionFsPath + "ep0"),
-      m_outEndpoint(usbFunctionFsPath + "ep1"),
-      m_inEndpoint(usbFunctionFsPath + "ep2"),
+    : m_controlEndpoint(Configuration::functionFsDir() + "/ep0"),
+      m_outEndpoint(Configuration::functionFsDir() + "/ep1"),
+      m_inEndpoint(Configuration::functionFsDir() + "/ep2"),
       m_readThread{nullptr},
       m_writeThread{nullptr},
       m_reader{nullptr},

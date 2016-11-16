@@ -18,6 +18,7 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
+#include "configuration.h"
 #include "libqdb/protocol/qdbtransport.h"
 #include "usb-gadget/usbgadget.h"
 #include "server.h"
@@ -35,7 +36,19 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addOption({"debug-transport", "Show each transmitted message"});
     parser.addOption({"debug-connection", "Show enqueued messages"});
+    parser.addOption({"ffs-dir", "Directory to the USB Function File System endpoints to use", "directory"});
+    parser.addOption({"gadget-configfs-dir",
+                      "Location of the configfs gadget configuration (including the gadget name)",
+                      "directory"});
+    parser.addOption({"rndis-function-name", "Name of the Function File System function that provides RNDIS", "name"});
     parser.process(app);
+
+    if (parser.isSet("ffs-dir"))
+        Configuration::setFunctionFsDir(parser.value("ffs-dir"));
+    if (parser.isSet("gadget-configfs-dir"))
+        Configuration::setGadgetConfigFsDir(parser.value("gadget-configfs-dir"));
+    if (parser.isSet("rndis-function-name"))
+        Configuration::setRndisFunctionName(parser.value("rndis-function-name"));
 
     QString filterRules;
     if (!parser.isSet("debug-transport")) {

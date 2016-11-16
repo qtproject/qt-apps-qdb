@@ -10,6 +10,7 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 SOURCES += \
+    configuration.cpp \
     createexecutor.cpp \
     echoexecutor.cpp \
     executor.cpp \
@@ -21,6 +22,7 @@ SOURCES += \
     usb-gadget/usbgadgetwriter.cpp \
 
 HEADERS += \
+    configuration.h \
     createexecutor.h \
     echoexecutor.h \
     executor.h \

@@ -20,19 +20,25 @@
 ******************************************************************************/
 #include "handshakeexecutor.h"
 
+#include "configuration.h"
 #include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
 #include <QtNetwork/qnetworkinterface.h>
 
-const QString gadgetConfigFsPath = "/sys/kernel/config/usb_gadget/g1/";
+QString rndisFunctionPath()
+{
+    return Configuration::gadgetConfigFsDir() + "/functions/" + Configuration::rndisFunctionName();
+}
 
 QString deviceIpAddress()
 {
-    QFile file{gadgetConfigFsPath + "functions/rndis.usb0/ifname"};
-    if (!file.open(QIODevice::ReadOnly))
+    QFile file{rndisFunctionPath() + "/ifname"};
+    if (!file.open(QIODevice::ReadOnly)) {
+        qCritical() << "Could not find network interface name from RNDIS configuration at" << rndisFunctionPath();
         return "";
+    }
 
     const auto interfaceName = QString{file.readAll()}.trimmed();
     const auto interface = QNetworkInterface::interfaceFromName(interfaceName);
@@ -50,17 +56,21 @@ QString deviceIpAddress()
 
 QString deviceSerial()
 {
-    QFile file{gadgetConfigFsPath + "strings/0x409/serialnumber"};
-    if (!file.open(QIODevice::ReadOnly))
+    QFile file{Configuration::gadgetConfigFsDir() + "/strings/0x409/serialnumber"};
+    if (!file.open(QIODevice::ReadOnly)) {
+        qCritical() << "Could not find device serial number from configfs configuration at" << Configuration::gadgetConfigFsDir();
         return "";
+    }
     return QString{file.readAll()}.trimmed();
 }
 
 QString hostSideMac()
 {
-    QFile file{gadgetConfigFsPath + "functions/rndis.usb0/host_addr"};
-    if (!file.open(QIODevice::ReadOnly))
+    QFile file{rndisFunctionPath() + "/host_addr"};
+    if (!file.open(QIODevice::ReadOnly)) {
+        qCritical() << "Could not find host MAC address from RNDIS configuration at" << rndisFunctionPath();
         return "";
+    }
     return QString{file.readAll()}.trimmed();
 }
 
