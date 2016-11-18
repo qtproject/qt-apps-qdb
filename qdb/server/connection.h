@@ -63,7 +63,7 @@ public slots:
 private:
     void acknowledge(StreamId hostId, StreamId deviceId);
     void processQueue();
-    void resetConnection();
+    void resetConnection(bool reconnect);
     void closeStream(StreamId id);
     void finishCreateStream(StreamId hostId, StreamId deviceId);
     void handleWrite(const QdbMessage &message);

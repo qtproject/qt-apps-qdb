@@ -103,18 +103,21 @@ void Connection::handleMessage()
     if (message.command() == QdbMessage::Open)
         qFatal("Connection received QdbMessage::Open, which is not supported!");
 
-    if (message.command() == QdbMessage::Invalid)
-        qFatal("Connection received invalid message!");
+    if (message.command() == QdbMessage::Invalid) {
+        qCritical("Connection received invalid message!");
+        resetConnection(false);
+        return;
+    }
 
     switch (m_state) {
     case ConnectionState::Disconnected:
         qWarning() << "Connection got a message in Disconnected state";
-        resetConnection();
+        resetConnection(true);
         break;
     case ConnectionState::WaitingForConnection:
         if (message.command() != QdbMessage::Connect) {
             qWarning() << "Connection got a non-Connect message in WaitingForConnection state";
-            resetConnection();
+            resetConnection(true);
             break;
         }
         if (checkVersion(message))
@@ -126,7 +129,7 @@ void Connection::handleMessage()
         switch (message.command()) {
         case QdbMessage::Connect:
             qWarning() << "Connection received QdbMessage::Connect while already connected. Reconnecting.";
-            resetConnection();
+            resetConnection(true);
             break;
         case QdbMessage::Write:
             handleWrite(message);
@@ -148,7 +151,7 @@ void Connection::handleMessage()
         switch (message.command()) {
         case QdbMessage::Connect:
             qWarning() << "Connection received QdbMessage::Connect while already connected and waiting. Reconnecting.";
-            resetConnection();
+            resetConnection(true);
             break;
         case QdbMessage::Write:
             handleWrite(message);
@@ -182,7 +185,7 @@ void Connection::acknowledge(StreamId hostId, StreamId deviceId)
     QdbMessage message{QdbMessage::Ok, hostId, deviceId};
     if (!m_transport->send(message)) {
         qCritical() << "Connection could not send" << message;
-        m_state = ConnectionState::Disconnected;
+        resetConnection(false);
         return;
     }
 }
@@ -210,7 +213,7 @@ void Connection::processQueue()
 
     if (!m_transport->send(message)) {
         qCritical() << "Connection could not send" << message;
-        m_state = ConnectionState::Disconnected;
+        resetConnection(false);
         return;
     }
 
@@ -231,9 +234,7 @@ void Connection::processQueue()
         // Close is not acknowledged so no need to transition to ConnectionState::Waiting
     case QdbMessage::Close:
         Q_ASSERT(m_state == ConnectionState::Connected);
-        if (m_streams.find(message.hostStream()) != m_streams.end()) {
-            closeStream(message.hostStream());
-        }
+        closeStream(message.hostStream());
         break;
     case QdbMessage::Ok:
         // 'Ok's are sent via acknowledge()
@@ -244,14 +245,15 @@ void Connection::processQueue()
     }
 }
 
-void Connection::resetConnection()
+void Connection::resetConnection(bool reconnect)
 {
     m_outgoingMessages.clear();
     m_state = ConnectionState::Disconnected;
     m_streamRequests.clear();
     m_streams.clear();
 
-    connect();
+    if (reconnect)
+        connect();
 }
 
 void Connection::closeStream(StreamId id)

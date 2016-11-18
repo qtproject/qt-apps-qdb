@@ -39,14 +39,19 @@ public:
     bool hasStream() const;
     void ask();
     void close();
+
 signals:
     void response(QString serial, QString macAddress, QString ipAddress);
 
 public slots:
     void receive(StreamPacket packet) override;
 
+protected slots:
+    void onStreamClosed() override;
+
 private:
     Connection *m_connection;
+    bool m_responded;
 };
 
 #endif // HANDSHAKESERVICE_H

@@ -27,7 +27,8 @@
 #include <QtCore/qdebug.h>
 
 HandshakeService::HandshakeService(Connection *connection)
-    : m_connection{connection}
+    : m_connection{connection},
+      m_responded{false}
 {
 
 }
@@ -63,7 +64,8 @@ void HandshakeService::ask()
 
 void HandshakeService::close()
 {
-    m_stream->requestClose();
+    if (m_stream)
+        m_stream->requestClose();
 }
 
 void HandshakeService::receive(StreamPacket packet)
@@ -73,5 +75,13 @@ void HandshakeService::receive(StreamPacket packet)
     QString deviceIpAddress;
     packet >> serial >> macAddress >> deviceIpAddress;
 
+    m_responded = true;
     emit response(serial, macAddress, deviceIpAddress);
+}
+
+void HandshakeService::onStreamClosed()
+{
+    Service::onStreamClosed();
+    if (!m_responded)
+        emit response("", "", "");
 }

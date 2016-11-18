@@ -42,6 +42,7 @@ public slots:
 private:
     libusb_device_handle *m_handle;
     uint8_t m_inAddress;
+    int m_errorCount;
 };
 
 #endif // USBCONNECTIONREADER_H

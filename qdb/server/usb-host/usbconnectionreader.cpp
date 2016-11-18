@@ -33,7 +33,8 @@ static const int quitCheckingTimeout = 500;
 
 UsbConnectionReader::UsbConnectionReader(libusb_device_handle *handle, uint8_t inAddress)
     : m_handle{handle},
-      m_inAddress{inAddress}
+      m_inAddress{inAddress},
+      m_errorCount{0}
 {
 
 }
@@ -45,10 +46,16 @@ void UsbConnectionReader::executeRead()
     int ret = libusb_bulk_transfer(m_handle, m_inAddress, reinterpret_cast<unsigned char *>(buffer.data()),
                                    buffer.size(), &transferred, quitCheckingTimeout);
     if (ret) {
-        // TODO: report errors?
-        if (ret != LIBUSB_ERROR_TIMEOUT)
-            qDebug() << "UsbConnectionReader error:" << libusb_error_name(ret);
+        if (ret != LIBUSB_ERROR_TIMEOUT) {
+            qWarning() << "Error reading from USB connection:" << libusb_error_name(ret);
+            ++m_errorCount;
+            if (m_errorCount == 5) {
+                emit newRead(QByteArray{});
+                m_errorCount = 0;
+            }
+        }
     } else {
+        m_errorCount = 0;
         buffer.resize(transferred);
         emit newRead(buffer);
     }

@@ -42,7 +42,7 @@ signals:
 public slots:
     virtual void receive(StreamPacket) = 0;
 
-private slots:
+protected slots:
     virtual void onStreamClosed();
 
 protected:
