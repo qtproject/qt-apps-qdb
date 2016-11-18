@@ -15,11 +15,8 @@ SOURCES += \
 
 HEADERS += \
     abstractconnection.h \
-    filepullcommon.h \
-    filepushcommon.h \
     interruptsignalhandler.h \
     libqdb_global.h \
-    processcommon.h \
     protocol/protocol.h \
     protocol/qdbmessage.h \
     protocol/qdbtransport.h \
