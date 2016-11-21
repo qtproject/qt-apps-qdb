@@ -33,7 +33,7 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(connectionC, "connection");
+Q_LOGGING_CATEGORY(connectionC, "qdb.connection");
 
 Server::Server(QdbTransport *transport, QObject *parent)
     : AbstractConnection{transport, parent},
@@ -54,7 +54,7 @@ void Server::handleMessage()
     switch (m_state) {
     case ServerState::Disconnected:
         if (message.command() != QdbMessage::Connect) {
-            qWarning() << "Server got non-Connect message in Disconnected state. Resetting.";
+            qCWarning(connectionC) << "Server got non-Connect message in Disconnected state. Resetting.";
             resetServer(false);
             break;
         }
@@ -64,7 +64,7 @@ void Server::handleMessage()
     case ServerState::Connected:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qWarning() << "Server received QdbMessage::Connect while already connected. Resetting.";
+            qCWarning(connectionC()) << "Server received QdbMessage::Connect while already connected. Resetting.";
             checkVersion(message);
             resetServer(true);
             break;
@@ -78,7 +78,7 @@ void Server::handleMessage()
             closeStream(message.deviceStream());
             break;
         case QdbMessage::Ok:
-            qWarning() << "Server received QdbMessage::Ok in connected state";
+            qCWarning(connectionC) << "Server received QdbMessage::Ok in connected state";
             break;
         case QdbMessage::Invalid:
             Q_UNREACHABLE();
@@ -88,7 +88,7 @@ void Server::handleMessage()
     case ServerState::Waiting:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qWarning() << "Server received QdbMessage::Connect while already connected and waiting. Resetting.";
+            qCWarning(connectionC()) << "Server received QdbMessage::Connect while already connected and waiting. Resetting.";
             resetServer(true);
             break;
         case QdbMessage::Open:
@@ -138,7 +138,7 @@ void Server::processQueue()
                "Tried to send invalid message");
 
     if (!m_transport->send(message)) {
-        qCritical() << "Server could not send" << message;
+        qCCritical(connectionC) << "Server could not send" << message;
         m_state = ServerState::Disconnected;
         return;
     }
@@ -157,9 +157,9 @@ void Server::processQueue()
         // onto the next message in the queue, otherwise it would only be sent
         // after host sends us something.
     case QdbMessage::Connect:
-        [[fallthrough]]
+        //[[fallthrough]]
     case QdbMessage::Close:
-        [[fallthrough]]
+        //[[fallthrough]]
     case QdbMessage::Ok:
         if (!m_outgoingMessages.isEmpty()) {
             processQueue();
@@ -196,7 +196,7 @@ void Server::resetServer(bool hostConnected)
 void Server::handleWrite(const QdbMessage &message)
 {
     if (m_streams.find(message.deviceStream()) == m_streams.end()) {
-        qWarning() << "Server received message to non-existing stream" << message.deviceStream();
+        qCWarning(connectionC) << "Server received message to non-existing stream" << message.deviceStream();
         enqueueMessage(QdbMessage{QdbMessage::Close, message.hostStream(), message.deviceStream()});
         return;
     }
@@ -207,7 +207,7 @@ void Server::handleWrite(const QdbMessage &message)
 void Server::closeStream(StreamId id)
 {
     if (m_streams.find(id) == m_streams.end()) {
-        qWarning() << "Server received Close to a non-existing stream";
+        qCWarning(connectionC) << "Server received Close to a non-existing stream" << id;
         return;
     }
 
@@ -234,8 +234,8 @@ void Server::checkVersion(const QdbMessage &message)
     dataStream >> protocolVersion;
 
     if (protocolVersion != qdbProtocolVersion) {
-        qWarning() << "Protocol version" << protocolVersion << "requested, but only version"
-                   << qdbProtocolVersion << "is known";
+        qCCritical(connectionC()) << "Protocol version" << protocolVersion << "requested, but only version"
+                                  << qdbProtocolVersion << "is known";
     }
 }
 

@@ -24,7 +24,6 @@
 #include "protocol/protocol.h"
 
 #include <QtCore/qdatastream.h>
-#include <QtCore/qdebug.h>
 
 QByteArray wrapPacket(const StreamPacket &packet)
 {

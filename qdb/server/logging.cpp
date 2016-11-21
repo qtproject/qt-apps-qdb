@@ -31,7 +31,6 @@ static QFile logFile;
 
 void hostServerMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
-    Q_UNUSED(context);
     if (!logFile.isWritable()) {
         if (!logFile.open(QFile::WriteOnly | QIODevice::Unbuffered)) {
             // Fall back to default handler
@@ -64,7 +63,8 @@ void hostServerMessageHandler(QtMsgType type, const QMessageLogContext &context,
         break;
     }
 
-    auto fullMsg = QString{"%1 %2\n"}.arg(prefix).arg(msg).toUtf8();
+    const auto message = qFormatLogMessage(type, context, msg);
+    const auto fullMsg = QString{"%1 %2\n"}.arg(prefix).arg(message).toUtf8();
     auto written = logFile.write(fullMsg);
     if (written != fullMsg.size()) {
         qInstallMessageHandler(nullptr);

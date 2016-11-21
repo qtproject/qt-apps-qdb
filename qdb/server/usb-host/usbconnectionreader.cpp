@@ -23,10 +23,13 @@
 #include "libqdb/protocol/protocol.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtCore/qthread.h>
 #include <QtCore/qtimer.h>
 
 #include <libusb.h>
+
+Q_DECLARE_LOGGING_CATEGORY(usbC);
 
 // Amount of milliseconds between yielding control to the event loop of the reading thread
 static const int quitCheckingTimeout = 500;
@@ -47,7 +50,7 @@ void UsbConnectionReader::executeRead()
                                    buffer.size(), &transferred, quitCheckingTimeout);
     if (ret) {
         if (ret != LIBUSB_ERROR_TIMEOUT) {
-            qWarning() << "Error reading from USB connection:" << libusb_error_name(ret);
+            qCWarning(usbC) << "Could not read from USB connection:" << libusb_error_name(ret);
             ++m_errorCount;
             if (m_errorCount == 5) {
                 emit newRead(QByteArray{});

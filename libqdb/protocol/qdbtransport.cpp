@@ -26,7 +26,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 
-Q_LOGGING_CATEGORY(transportC, "transport");
+Q_LOGGING_CATEGORY(transportC, "qdb.transport");
 
 QdbTransport::QdbTransport(QIODevice *io)
     : m_io{io}
@@ -54,7 +54,7 @@ bool QdbTransport::send(const QdbMessage &message)
 
     int count = m_io->write(buf.constData(), messageSize);
     if (count != messageSize) {
-        qCritical() << "QdbTransport::send() could not write entire message of" << messageSize << ", only wrote" << count;
+        qCCritical(transportC) << "Could not write entire message of" << messageSize << "bytes, only wrote" << count;
         return false;
     }
 
@@ -67,7 +67,7 @@ QdbMessage QdbTransport::receive()
     QByteArray buf{qdbMessageSize, '\0'};
     int count = m_io->read(buf.data(), buf.size());
     if (count < qdbHeaderSize) {
-        qDebug() << "QdbTransport::receive() could only read" << count << "out of package header's" << qdbHeaderSize;
+        qCCritical(transportC) << "Could only read" << count << "bytes out of package header's" << qdbHeaderSize;
         return QdbMessage{QdbMessage::Invalid, 0, 0};
     }
     QDataStream stream{buf};

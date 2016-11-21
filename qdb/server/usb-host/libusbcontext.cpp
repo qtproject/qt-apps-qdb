@@ -20,9 +20,12 @@
 ******************************************************************************/
 #include "usbcommon.h"
 
+#include <QtCore/qloggingcategory.h>
 #include <QtGlobal>
 
 #include <libusb.h>
+
+Q_DECLARE_LOGGING_CATEGORY(usbC);
 
 struct LibUsbContext
 {
@@ -31,7 +34,7 @@ struct LibUsbContext
     {
         int ret = libusb_init(&context);
         if (ret) {
-            qCritical("Could not initialize libusb");
+            qCCritical(usbC) << "Could not initialize libusb";
         }
     }
 

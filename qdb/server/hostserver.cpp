@@ -30,6 +30,8 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtNetwork/qlocalsocket.h>
 
+Q_LOGGING_CATEGORY(hostServerC, "qdb.hostserver");
+
 int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser)
 {
     setupLogging();
@@ -67,13 +69,13 @@ void HostServer::listen()
     QFile::remove(socketPath);
 #endif
     if (!m_localServer.listen(qdbSocketName)) {
-        qCritical() << "Could not start listening with QLocalServer: "
-                    << m_localServer.errorString();
+        qCCritical(hostServerC) << "Could not start listening with QLocalServer: "
+                                << m_localServer.errorString();
         close();
         return;
     }
     connect(&m_localServer, &QLocalServer::newConnection, this, &HostServer::handleClient);
-    qDebug() << "Host server started listening.";
+    qCDebug(hostServerC) << "Started listening";
 
     connect(&m_deviceManager, &DeviceManager::newDeviceInfo, this, &HostServer::handleNewDeviceInfo);
     connect(&m_deviceManager, &DeviceManager::disconnectedDevice, this, &HostServer::handleDisconnectedDevice);
@@ -82,7 +84,7 @@ void HostServer::listen()
 
 void HostServer::close()
 {
-    qDebug() << "Shutting QDB host server down";
+    qCDebug(hostServerC) << "Shutting down";
     m_localServer.close();
     while (!m_servlets.empty())
         m_servlets.front().close(); // closing results in being erased from the list
@@ -93,7 +95,7 @@ void HostServer::handleClient()
 {
     QLocalSocket *socket = m_localServer.nextPendingConnection();
     if (!socket) {
-        qCritical() << "Did not get a connection from client";
+        qCCritical(hostServerC) << "Did not get a connection from client";
         close();
         return;
     }
@@ -116,15 +118,15 @@ void HostServer::handleDoneClient(ServletId servletId)
     if (iter != m_servlets.end())
         m_servlets.erase(iter);
     else
-        qWarning() << "Could not find done servlet" << servletId << "when trying to remove it";
+        qCWarning(hostServerC) << "Could not find done servlet" << servletId << "when trying to remove it";
 }
 
 void HostServer::handleNewDeviceInfo(DeviceInformation info)
 {
-    qDebug() << "New device information about" << info.serial;
+    qCDebug(hostServerC) << "New device information about" << info.serial;
 }
 
 void HostServer::handleDisconnectedDevice(QString serial)
 {
-    qDebug() << "Disconnected" << serial;
+    qCDebug(hostServerC) << "Disconnected" << serial;
 }

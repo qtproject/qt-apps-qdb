@@ -28,9 +28,12 @@
 
 #include <QtCore/qdatastream.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtCore/qthread.h>
 
 #include <linux/usb/functionfs.h>
+
+Q_LOGGING_CATEGORY(usbC, "qdb.usb");
 
 usb_interface_descriptor makeInterfaceDescriptor()
 {
@@ -144,26 +147,26 @@ bool UsbGadget::open(QIODevice::OpenMode mode)
 
     qint64 bytes = m_controlEndpoint.write(reinterpret_cast<const char*>(&descriptors), sizeof(descriptors));
     if (bytes == -1) {
-        qDebug() << "Failed to write USB descriptors:" << m_controlEndpoint.errorString();
+        qCCritical(usbC) << "Failed to write USB descriptors:" << m_controlEndpoint.errorString();
         return false;
     }
 
     bytes = m_controlEndpoint.write(reinterpret_cast<const char*>(&strings), sizeof(strings));
     if (bytes == -1) {
-        qDebug() << "Failed to write USB strings:" << m_controlEndpoint.errorString();
+        qCCritical(usbC) << "Failed to write USB strings:" << m_controlEndpoint.errorString();
         return false;
     }
 
     if (!m_outEndpoint.open(QIODevice::ReadOnly | QIODevice::Unbuffered)) {
-        qDebug() << "Failed to open endpoint from host to gadget";
+        qCCritical(usbC) << "Failed to open endpoint from host to gadget";
         return false;
     }
 
     if (!m_inEndpoint.open(QIODevice::WriteOnly | QIODevice::Unbuffered)) {
-        qDebug() << "Failed to open endpoint from gadget to host";
+        qCCritical(usbC) << "Failed to open endpoint from gadget to host";
         return false;
     }
-    qDebug() << "Initialized function fs";
+    qCDebug(usbC) << "Initialized function fs";
 
     startReadThread();
     startWriteThread();
@@ -174,7 +177,7 @@ bool UsbGadget::open(QIODevice::OpenMode mode)
 qint64 UsbGadget::readData(char *data, qint64 maxSize)
 {
     if (m_reads.isEmpty()) {
-        qDebug() << "UsbGadget read queue empty in readData";
+        qCWarning(usbC) << "UsbGadget read queue empty while trying to read";
         return -1;
     }
     QByteArray read = m_reads.dequeue();
@@ -191,7 +194,7 @@ qint64 UsbGadget::writeData(const char *data, qint64 size)
         return size;
     }
 
-    qDebug() << "Tried to send to host through closed endpoint";
+    qCCritical(usbC) << "Tried to send to host through closed endpoint";
     return -1;
 }
 
@@ -229,11 +232,11 @@ void UsbGadget::startWriteThread()
 bool UsbGadget::openControlEndpoint()
 {
     if (!QFile::exists(m_controlEndpoint.fileName())) {
-        qCritical() << "USB ffs control endpoint" << m_controlEndpoint.fileName() << "does not exist";
+        qCCritical(usbC) << "USB ffs control endpoint" << m_controlEndpoint.fileName() << "does not exist";
         return false;
     }
     if (!m_controlEndpoint.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
-        qCritical() << "Failed to open control endpoint" << m_controlEndpoint.fileName();
+        qCCritical(usbC) << "Failed to open control endpoint" << m_controlEndpoint.fileName();
         return false;
     }
     return true;

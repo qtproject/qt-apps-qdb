@@ -24,7 +24,10 @@
 
 #include <QtCore/qjsonarray.h>
 #include <QtCore/qjsonobject.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtNetwork/qlocalsocket.h>
+
+Q_DECLARE_LOGGING_CATEGORY(hostServerC);
 
 QJsonObject deviceInformationToJsonObject(const DeviceInformation &deviceInfo)
 {
@@ -73,6 +76,7 @@ void HostServlet::handleDisconnection()
 
 void HostServlet::handleRequest()
 {
+    qCDebug(hostServerC) << "Got request from client" << m_id;
     const auto requestBytes = m_socket->readLine();
     const auto request = QJsonDocument::fromJson(requestBytes);
     const auto type = requestType(request.object());
@@ -88,7 +92,7 @@ void HostServlet::handleRequest()
         stopServer();
         break;
     case RequestType::Unknown:
-        qWarning() << "Got invalid request from client:" << requestBytes;
+        qCWarning(hostServerC) << "Request from client" << m_id << "is invalid:" << requestBytes;
         const QJsonObject response = initializeResponse(ResponseType::InvalidRequest);
         m_socket->write(serialiseResponse(response));
         close();
@@ -107,11 +111,11 @@ void HostServlet::replyDevices()
     response["devices"] = infoArray;
 
     if (!m_socket || !m_socket->isWritable()) {
-        qWarning() << "Could not reply to the client";
+        qCWarning(hostServerC) << "Could not reply to client" << m_id;
         return;
     }
     m_socket->write(serialiseResponse(response));
-    qDebug() << "Replied device information to the client";
+    qCDebug(hostServerC) << "Replied device information to client" << m_id;
     close();
 }
 
@@ -121,11 +125,11 @@ void HostServlet::replyNewDevice(const DeviceInformation &deviceInfo)
     response["device"] = deviceInformationToJsonObject(deviceInfo);
 
     if (!m_socket || !m_socket->isWritable()) {
-        qWarning() << "Could not reply to the client";
+        qCWarning(hostServerC) << "Could not send new device information to client" << m_id;
         return;
     }
     m_socket->write(serialiseResponse(response));
-    qDebug() << "Sent new device information to the client";
+    qCDebug(hostServerC) << "Sent new device information to client" << m_id;
 }
 
 void HostServlet::replyDisconnectedDevice(const QString &serial)
@@ -134,23 +138,23 @@ void HostServlet::replyDisconnectedDevice(const QString &serial)
     response["serial"] = serial;
 
     if (!m_socket || !m_socket->isWritable()) {
-        qWarning() << "Could not reply to the client";
+        qCWarning(hostServerC) << "Could not send disconnected device information to client" << m_id;
         return;
     }
     m_socket->write(serialiseResponse(response));
-    qDebug() << "Sent disconnected device information to the client";
+    qCDebug(hostServerC) << "Sent disconnected device information to client" << m_id;
 }
 
 void HostServlet::startWatchingDevices()
 {
-    qDebug() << "Starting to watch devices";
+    qCDebug(hostServerC) << "Starting to watch devices for client" << m_id;
     connect(&m_deviceManager, &DeviceManager::newDeviceInfo, this, &HostServlet::replyNewDevice);
     connect(&m_deviceManager, &DeviceManager::disconnectedDevice, this, &HostServlet::replyDisconnectedDevice);
 
     const auto deviceInfos = m_deviceManager.listDevices();
     for (const auto &deviceInfo : deviceInfos)
         replyNewDevice(deviceInfo);
-    qDebug() << "Reported initial devices to watcher";
+    qCDebug(hostServerC) << "Reported initial devices to client" << m_id;
 }
 
 void HostServlet::stopServer()
@@ -158,11 +162,11 @@ void HostServlet::stopServer()
     QJsonObject response = initializeResponse(ResponseType::Stopping);
 
     if (!m_socket || !m_socket->isWritable()) {
-        qWarning() << "Could not reply to the client";
-        return;
+        qCWarning(hostServerC) << "Could not acknowledge stopping to client" << m_id;
+    } else {
+        m_socket->write(serialiseResponse(response));
+        qCDebug(hostServerC) << "Acknowledged stopping to client" << m_id;
     }
-    m_socket->write(serialiseResponse(response));
-    qDebug() << "Acknowledged stopping";
 
     emit serverStopRequested();
     // All servlets, including this one will be closed during shutdown

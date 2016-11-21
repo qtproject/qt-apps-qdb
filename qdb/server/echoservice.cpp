@@ -25,6 +25,9 @@
 #include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(echoC, "qdb.services.echo");
 
 EchoService::EchoService(Connection *connection)
     : m_connection{connection}
@@ -53,7 +56,7 @@ bool EchoService::hasStream() const
 void EchoService::send(const QString &string)
 {
     if (!m_stream) {
-        qCritical() << "No valid stream in EchoService when trying to send";
+        qCCritical(echoC) << "No valid stream in EchoService when trying to send";
         return;
     }
     StreamPacket packet{string.toUtf8()};

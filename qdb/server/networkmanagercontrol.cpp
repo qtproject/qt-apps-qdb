@@ -20,9 +20,12 @@
 ******************************************************************************/
 #include "networkmanagercontrol.h"
 
+#include <QtCore/qloggingcategory.h>
 #include <QtDBus>
 
 #include <algorithm>
+
+Q_LOGGING_CATEGORY(networkC, "qdb.network");
 
 using SettingsMap = QMap<QString, QMap<QString, QDBusVariant>>;
 
@@ -35,23 +38,23 @@ SettingsMap demarshallSettings(const QDBusArgument &settingsArgument);
 
 void configureUsbNetwork(const QString &serial, const QString &macAddress)
 {
-    qDebug() << "Configuring network for" << serial << "at" << macAddress;
+    qCDebug(networkC) << "Configuring network for" << serial << "at" << macAddress;
     NetworkManagerControl networkManager;
     auto deviceResult = networkManager.findNetworkDeviceByMac(macAddress);
     if (!deviceResult.isValid()) {
-        qWarning() << "Could not find network device" << macAddress;
+        qCWarning(networkC) << "Could not find network device" << macAddress;
         return;
     } else {
         const auto networkCard = deviceResult.toString();
         if (networkManager.isActivated(networkCard)) {
-            qDebug() << networkCard << "is activated";
+            qCDebug(networkC) << networkCard << "is activated";
             if (networkManager.isDeviceUsingLinkLocal(networkCard)) {
-                qInfo() << networkCard << "is already using a link-local IP";
+                qCInfo(networkC) << networkCard << "is already using a link-local IP";
                 return;
             }
         }
         if (!networkManager.activateOrCreateConnection(QDBusObjectPath{networkCard}, serial, macAddress))
-            qWarning() << "Could not setup network settings for the USB Ethernet interface";
+            qCWarning(networkC) << "Could not setup network settings for the USB Ethernet interface";
     }
 }
 
@@ -60,7 +63,7 @@ QVariant connectionMac(QDBusConnection &bus, const QDBusObjectPath &connectionPa
     const auto result = connectionSettings(bus, connectionPath);
 
     if (!result.isValid()) {
-        qWarning() << "Could not get MAC address for" << connectionPath.path();
+        qCWarning(networkC) << "Could not get MAC address for" << connectionPath.path();
         return QVariant{};
     }
     const auto settings = result.value<SettingsMap>();
@@ -71,7 +74,7 @@ QVariant connectionMac(QDBusConnection &bus, const QDBusObjectPath &connectionPa
 QVariant connectionSettings(QDBusConnection &bus, const QDBusObjectPath &connectionPath)
 {
     if (!bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << bus.lastError();
         return QVariant{};
     }
     QDBusInterface connectionInterface{networkManagerServiceName,
@@ -79,13 +82,13 @@ QVariant connectionSettings(QDBusConnection &bus, const QDBusObjectPath &connect
                                    networkManagerInterfaceName + ".Settings.Connection",
                                    bus};
     if (!connectionInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager Connection:" << connectionPath.path() << connectionInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager Connection:" << connectionPath.path() << connectionInterface.lastError();
         return QVariant{};
     }
 
     QDBusMessage result = connectionInterface.call("GetSettings");
     if (result.type() != QDBusMessage::ReplyMessage) {
-        qWarning() << "Could not get connection settings for" << connectionPath.path() << ":" << result.errorMessage();
+        qCWarning(networkC) << "Could not get connection settings for" << connectionPath.path() << ":" << result.errorMessage();
         return QVariant{};
     }
     Q_ASSERT(result.arguments().size() == 1);
@@ -96,7 +99,7 @@ QVariant connectionSettings(QDBusConnection &bus, const QDBusObjectPath &connect
 QVariant connectionSettingsFromDevice(QDBusConnection &bus, const QString &devicePath)
 {
     if (!bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << bus.lastError();
         return QVariant{};
     }
     QDBusInterface deviceInterface{networkManagerServiceName,
@@ -104,13 +107,13 @@ QVariant connectionSettingsFromDevice(QDBusConnection &bus, const QString &devic
                                    networkManagerInterfaceName + ".Device",
                                    bus};
     if (!deviceInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager Device:" << devicePath << deviceInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager Device:" << devicePath << deviceInterface.lastError();
         return QVariant{};
     }
 
     QDBusMessage result = deviceInterface.call("GetAppliedConnection", 0u);
     if (result.type() != QDBusMessage::ReplyMessage) {
-        qWarning() << "Could not get connection settings for" << devicePath << ":" << result.errorMessage();
+        qCWarning(networkC) << "Could not get connection settings for" << devicePath << ":" << result.errorMessage();
         return QVariant{};
     }
     Q_ASSERT(result.arguments().size() == 2);
@@ -152,10 +155,10 @@ NetworkManagerControl::NetworkManagerControl()
 
 bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &devicePath, const QString &serial, const QString &macAddress)
 {
-    qDebug() << "Activating or creating a connection";
+    qCDebug(networkC) << "Activating or creating a connection";
     const auto connectionsResult = findConnectionsByMac(macAddress);
     if (!connectionsResult.isValid()) {
-        qWarning() << "Could not list NetworkManager connections";
+        qCWarning(networkC) << "Could not list NetworkManager connections";
         return false;
     }
     const auto connections = connectionsResult.value<QList<QDBusObjectPath>>();
@@ -166,17 +169,17 @@ bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &de
 
     QDBusObjectPath connectionPath;
     if (it != connections.end()) {
-        qDebug() << "Found existing connection:" << it->path();
+        qCDebug(networkC) << "Found existing connection:" << it->path();
         connectionPath = *it;
     } else {
-        qDebug() << "Creating new connection";
+        qCDebug(networkC) << "Creating new connection";
         const auto result = createConnection(serial, macAddress);
         if (!result.isValid()) {
-            qWarning() << "Could not create a NetworkManager connection for" << macAddress;
+            qCWarning(networkC) << "Could not create a NetworkManager connection for" << macAddress;
             return false;
         }
         connectionPath = result.value<QDBusObjectPath>();
-        qDebug() << "New connection:" << connectionPath.path();
+        qCDebug(networkC) << "New connection:" << connectionPath.path();
     }
 
     QDBusInterface networkManagerInterface{networkManagerServiceName,
@@ -185,8 +188,8 @@ bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &de
                                            m_bus};
 
     if (!networkManagerInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager D-Bus interface:"
-                   << networkManagerInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager D-Bus interface:"
+                            << networkManagerInterface.lastError();
         return false;
     }
 
@@ -197,7 +200,7 @@ bool NetworkManagerControl::activateOrCreateConnection(const QDBusObjectPath &de
 
     if (response.type() != QDBusMessage::ReplyMessage)
         return false;
-    qDebug() << "Successfully activated" << connectionPath.path();
+    qCDebug(networkC) << "Successfully activated" << connectionPath.path();
     return true;
 }
 
@@ -236,7 +239,7 @@ QVariant NetworkManagerControl::createConnection(const QString &serial, const QS
     settings["ipv4"] = ipv4Map;
 
     if (!m_bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << m_bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << m_bus.lastError();
         return QVariant{};
     }
 
@@ -246,8 +249,8 @@ QVariant NetworkManagerControl::createConnection(const QString &serial, const QS
                                                m_bus};
 
     if (!connectionSettingsInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager Settings D-Bus interface:"
-                   << connectionSettingsInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager Settings D-Bus interface:"
+                            << connectionSettingsInterface.lastError();
         return QVariant{};
     }
 
@@ -263,7 +266,7 @@ QVariant NetworkManagerControl::createConnection(const QString &serial, const QS
 QVariant NetworkManagerControl::findConnectionsByMac(const QString &macAddress)
 {
     if (!m_bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << m_bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << m_bus.lastError();
         return QVariant{};
     }
 
@@ -273,14 +276,14 @@ QVariant NetworkManagerControl::findConnectionsByMac(const QString &macAddress)
                                      m_bus};
 
     if (!settingsInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager D-Bus interface:"
-                   << settingsInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager D-Bus interface:"
+                            << settingsInterface.lastError();
         return QVariant{};
     }
 
     QVariant result = settingsInterface.property("Connections");
     if (!result.isValid()) {
-        qWarning() << "Could not fetch the NetworkManager connections via D-Bus" << settingsInterface.lastError();
+        qCWarning(networkC) << "Could not fetch the NetworkManager connections via D-Bus" << settingsInterface.lastError();
         return QVariant{};
     }
 
@@ -294,9 +297,9 @@ QVariant NetworkManagerControl::findConnectionsByMac(const QString &macAddress)
                      const auto mac = result.toByteArray();
                      return macAddressToByteArray(macAddress) == mac;
                  });
-    qDebug() << "Existing connections for" << macAddress << ":";
+    qCDebug(networkC) << "Existing connections for" << macAddress << ":";
     for (const auto &connection : matchingConnections)
-        qDebug() << "    " << connection.path();
+        qCDebug(networkC) << "    " << connection.path();
     return QVariant::fromValue(matchingConnections);
 }
 
@@ -312,7 +315,7 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
                                             networkManagerInterfaceName + ".Device.Wired",
                                             m_bus};
         if (!wiredDeviceInterface.isValid()) {
-            qWarning() << "Could not find NetworkManager Device:" << device.path() << wiredDeviceInterface.lastError();
+            qCWarning(networkC) << "Could not find NetworkManager Device:" << device.path() << wiredDeviceInterface.lastError();
             continue;
         }
         QVariant macResult = wiredDeviceInterface.property("HwAddress");
@@ -321,12 +324,12 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
             // Non-wired devices result into errors due to no MAC address and need not be warned about.
             // For some reason the error type in this case can be either UnknownInterface or InvalidArgs.
             if (error.type() != QDBusError::UnknownInterface && error.type() != QDBusError::InvalidArgs)
-                qWarning() << "Could not fetch hw address for" << device.path() << error;
+                qCWarning(networkC) << "Could not fetch hw address for" << device.path() << error;
             continue;
         }
 
         if (macResult.toString().toUpper() == normalizedMac) {
-            qDebug() << macAddress << "is" << device.path();
+            qCDebug(networkC) << macAddress << "is" << device.path();
             return device.path();
         }
     }
@@ -336,7 +339,7 @@ QVariant NetworkManagerControl::findNetworkDeviceByMac(const QString &macAddress
 bool NetworkManagerControl::isActivated(const QString &devicePath)
 {
     if (!m_bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << m_bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << m_bus.lastError();
         // TODO: separate error value?
         return false;
     }
@@ -346,15 +349,15 @@ bool NetworkManagerControl::isActivated(const QString &devicePath)
                                    networkManagerInterfaceName + ".Device",
                                    m_bus};
     if (!deviceInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager Device:" << devicePath << deviceInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager Device:" << devicePath << deviceInterface.lastError();
         // TODO: separate error value?
         return false;
     }
 
     const QVariant result = deviceInterface.property("State");
     if (!result.isValid()) {
-        qWarning() << "Could not check activation status of " << devicePath
-                   << "via D-Bus:" << deviceInterface.lastError();
+        qCWarning(networkC) << "Could not check activation status of " << devicePath
+                            << "via D-Bus:" << deviceInterface.lastError();
     }
     const auto state = result.toUInt();
 
@@ -405,7 +408,7 @@ bool NetworkManagerControl::isActivated(const QString &devicePath)
     case NM_DEVICE_STATE_FAILED:
         return false;
     default:
-        qCritical() << "Unrecognized NetworkManager device state" << state;
+        qCCritical(networkC) << "Unrecognized NetworkManager device state" << state;
         return false;
     }
 }
@@ -438,7 +441,7 @@ bool NetworkManagerControl::isDeviceUsingLinkLocal(const QString &devicePath)
 QVariant NetworkManagerControl::listNetworkDevices()
 {
     if (!m_bus.isConnected()) {
-        qWarning() << "Could not connect to D-Bus system bus: " << m_bus.lastError();
+        qCWarning(networkC) << "Could not connect to D-Bus system bus: " << m_bus.lastError();
         return QVariant{};
     }
 
@@ -448,14 +451,15 @@ QVariant NetworkManagerControl::listNetworkDevices()
                                            m_bus};
 
     if (!networkManagerInterface.isValid()) {
-        qWarning() << "Could not find NetworkManager D-Bus interface:"
-                   << networkManagerInterface.lastError();
+        qCWarning(networkC) << "Could not find NetworkManager D-Bus interface:"
+                            << networkManagerInterface.lastError();
         return QVariant{};
     }
 
     QVariant result = networkManagerInterface.property("Devices");
     if (!result.isValid()) {
-        qWarning() << "Could not fetch the NetworkManager devices via D-Bus" << networkManagerInterface.lastError();
+        qCWarning(networkC) << "Could not fetch the NetworkManager devices via D-Bus"
+                            << networkManagerInterface.lastError();
     }
     return result;
 }

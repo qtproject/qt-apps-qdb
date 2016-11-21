@@ -27,9 +27,12 @@
 #include "usbconnectionreader.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtCore/qthread.h>
 
 #include <libusb.h>
+
+Q_LOGGING_CATEGORY(usbC, "qdb.usb");
 
 UsbConnection::UsbConnection(const UsbDevice &device)
     : m_device{device.usbDevice},
@@ -64,8 +67,7 @@ bool UsbConnection::open(OpenMode mode)
     libusb_config_descriptor *config;
     int ret = libusb_get_active_config_descriptor(m_device.pointer(), &config);
     if (ret) {
-        qDebug("could not get config descriptor: %s\n",
-               libusb_error_name(ret));
+        qCWarning(usbC) << "Could not get config descriptor:" << libusb_error_name(ret);
         return false;
     }
     ScopeGuard configGuard = [&]() {
@@ -74,22 +76,22 @@ bool UsbConnection::open(OpenMode mode)
 
     ret = libusb_open(m_device.pointer(), &m_handle);
     if (ret) {
-        qDebug("cannot open device: %s\n", libusb_error_name(ret));
+        qCDebug(usbC) << "Could not open device:" << libusb_error_name(ret);
         return false;
     }
 
     if (libusb_kernel_driver_active(m_handle, m_interfaceInfo.number) == 1) {
-        qDebug() << "Detached kernel driver";
+        qCDebug(usbC) << "Detached kernel driver";
         m_detachedKernel = true;
         libusb_detach_kernel_driver(m_handle, m_interfaceInfo.number);
     }
 
     ret = libusb_claim_interface(m_handle, m_interfaceInfo.number);
     if (ret) {
-        qDebug("cannot claim interface: %s", libusb_error_name(ret));
+        qCDebug(usbC) << "Could not claim interface:" << libusb_error_name(ret);
         return false;
     }
-    qDebug("claimed interface %d", m_interfaceInfo.number);
+    qCDebug(usbC) << "Claimed interface" << m_interfaceInfo.number;
 
     startReader(m_handle, m_interfaceInfo.inAddress);
 
@@ -99,7 +101,7 @@ bool UsbConnection::open(OpenMode mode)
 qint64 UsbConnection::readData(char *data, qint64 maxSize)
 {
     if (m_reads.isEmpty()) {
-        qDebug() << "UsbConnection read queue empty in readData";
+        qCWarning(usbC) << "UsbConnection read queue empty while trying to read";
         return -1;
     }
     QByteArray read = m_reads.dequeue();
@@ -117,7 +119,7 @@ qint64 UsbConnection::writeData(const char *data, qint64 maxSize)
     int transferred = 0;
     int ret = libusb_bulk_transfer(m_handle, m_interfaceInfo.outAddress, (unsigned char*)data, size, &transferred, 0);
     if (ret) {
-        qDebug() << "writeData error:" << libusb_error_name(ret);
+        qCCritical(usbC) << "Could not write message header:" << libusb_error_name(ret);
         return -1;
     }
     Q_ASSERT(transferred == size); // TODO: handle partial transfers of header
@@ -127,7 +129,7 @@ qint64 UsbConnection::writeData(const char *data, qint64 maxSize)
         int rest = maxSize - size;
         int ret = libusb_bulk_transfer(m_handle, m_interfaceInfo.outAddress, (unsigned char*)data + size, rest, &transferred, 0);
         if (ret) {
-            qDebug() << "writeData error:" << libusb_error_name(ret);
+            qCCritical(usbC) << "Could not write message payload:" << libusb_error_name(ret);
             return -1;
         }
     }

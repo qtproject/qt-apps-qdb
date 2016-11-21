@@ -25,7 +25,10 @@
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtNetwork/qnetworkinterface.h>
+
+Q_LOGGING_CATEGORY(handshakeC, "qdb.executors.handshake");
 
 QString rndisFunctionPath()
 {
@@ -36,7 +39,7 @@ QString deviceIpAddress()
 {
     QFile file{rndisFunctionPath() + "/ifname"};
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "Could not find network interface name from RNDIS configuration at" << rndisFunctionPath();
+        qCCritical(handshakeC) << "Could not find network interface name from RNDIS configuration at" << rndisFunctionPath();
         return "";
     }
 
@@ -47,7 +50,7 @@ QString deviceIpAddress()
     for (const auto &entry : addressEntries) {
         const auto ip = entry.ip();
         if (ip.protocol() == QAbstractSocket::IPv4Protocol) {
-            qDebug() << "Device IP address:" << ip.toString();
+            qCDebug(handshakeC) << "Device IP address:" << ip.toString();
             return ip.toString();
         }
     }
@@ -58,7 +61,7 @@ QString deviceSerial()
 {
     QFile file{Configuration::gadgetConfigFsDir() + "/strings/0x409/serialnumber"};
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "Could not find device serial number from configfs configuration at" << Configuration::gadgetConfigFsDir();
+        qCCritical(handshakeC) << "Could not find device serial number from configfs configuration at" << Configuration::gadgetConfigFsDir();
         return "";
     }
     return QString{file.readAll()}.trimmed();
@@ -68,7 +71,7 @@ QString hostSideMac()
 {
     QFile file{rndisFunctionPath() + "/host_addr"};
     if (!file.open(QIODevice::ReadOnly)) {
-        qCritical() << "Could not find host MAC address from RNDIS configuration at" << rndisFunctionPath();
+        qCCritical(handshakeC) << "Could not find host MAC address from RNDIS configuration at" << rndisFunctionPath();
         return "";
     }
     return QString{file.readAll()}.trimmed();
@@ -85,10 +88,10 @@ void HandshakeExecutor::receive(StreamPacket packet)
 {
     Q_UNUSED(packet);
 
-    qDebug() << "Responding to handshake with device information.";
     StreamPacket response;
     response << deviceSerial();
     response << hostSideMac();
     response << deviceIpAddress();
     m_stream->write(response);
+    qCDebug(handshakeC) << "Responded to handshake with device information";
 }

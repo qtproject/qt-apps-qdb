@@ -26,8 +26,11 @@
 #include "usbdeviceenumerator.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 
 #include <libusb.h>
+
+Q_DECLARE_LOGGING_CATEGORY(usbC);
 
 bool isQdbInterface(const libusb_interface &interface)
 {
@@ -40,7 +43,7 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
     libusb_config_descriptor *config;
     const int ret = libusb_get_active_config_descriptor(device, &config);
     if (ret) {
-        qCritical() << "Could not get config descriptor" << libusb_error_name(ret);
+        qCCritical(usbC) << "Could not get config descriptor:" << libusb_error_name(ret);
         return std::make_pair(false, UsbInterfaceInfo{});
     }
     ScopeGuard configGuard = [&]() {
@@ -79,7 +82,7 @@ QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
     libusb_device_descriptor desc;
     int ret = libusb_get_device_descriptor(device, &desc);
     if (ret) {
-        qCritical() << "Could not get device descriptor" << libusb_error_name(ret);
+        qCCritical(usbC) << "Could not get device descriptor" << libusb_error_name(ret);
         return serial;
     }
     auto serialIndex = desc.iSerialNumber;
@@ -89,7 +92,7 @@ QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
     unsigned char buffer[bufferSize];
     int length = libusb_get_string_descriptor(handle, serialIndex, englishUsLangId, buffer, bufferSize);
     if (length <= 0) {
-        qWarning() << "Could not get string descriptor of serial number:" << libusb_error_name(length);
+        qCWarning(usbC) << "Could not get string descriptor of serial number:" << libusb_error_name(length);
         return serial;
     }
     // length is the length in bytes and UTF-16 characters consist of two bytes
@@ -114,7 +117,7 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
     libusb_device_handle *handle;
     int ret = libusb_open(device, &handle);
     if (ret) {
-        qDebug() << "Could not open USB device for checking serial number:" << libusb_error_name(ret);
+        qCWarning(usbC) << "Could not open USB device for checking serial number:" << libusb_error_name(ret);
         return std::make_pair(false, UsbDevice{});
     }
     ScopeGuard deviceGuard = [=]() {
@@ -130,7 +133,7 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
 std::vector<UsbDevice> makeUsbDevices()
 {
     if (!libUsbContext()) {
-        qDebug() << "Not initialized libusb in UsbDeviceEnumerator";
+        qCCritical(usbC) << "Uninitialized libusb in UsbDeviceEnumerator";
         return std::vector<UsbDevice>{};
     }
 
@@ -141,7 +144,7 @@ std::vector<UsbDevice> makeUsbDevices()
     };
 
     if (deviceCount < 0) {
-        qCritical() << "USB devices could not be listed:" << libusb_error_name(deviceCount);
+        qCCritical(usbC) << "Could not list USB devices:" << libusb_error_name(deviceCount);
         return std::vector<UsbDevice>{};
     }
 

@@ -22,8 +22,6 @@
 
 #include "libqdb/stream.h"
 
-#include <QtCore/qdebug.h>
-
 Service::Service()
     : m_stream{nullptr}
 {

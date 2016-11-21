@@ -25,7 +25,10 @@
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtCore/qtimer.h>
+
+Q_DECLARE_LOGGING_CATEGORY(usbC);
 
 UsbGadgetReader::UsbGadgetReader(QFile *readEndpoint)
     : m_readEndpoint{readEndpoint}
@@ -36,7 +39,7 @@ UsbGadgetReader::UsbGadgetReader(QFile *readEndpoint)
 void UsbGadgetReader::executeRead()
 {
     if (!m_readEndpoint->isOpen()) {
-        qWarning() << "tried to receive from host through closed endpoint";
+        qCCritical(usbC) << "Tried to receive from host through closed endpoint";
         return;
     }
 
@@ -45,10 +48,10 @@ void UsbGadgetReader::executeRead()
     QByteArray headerBuffer{qdbHeaderSize, '\0'};
     int count = m_readEndpoint->read(headerBuffer.data(), headerBuffer.size());
     if (count == -1) {
-        qWarning() << "error in reading message header from endpoint";
+        qCWarning(usbC) << "Could not read message header from endpoint";
         return;
     } else if (count < headerBuffer.size()) {
-        qWarning() << "error: read" << count << "out of" << headerBuffer.size() << "byte header from endpoint";
+        qCWarning(usbC) << "Could only read" << count << "out of" << headerBuffer.size() << "byte header from endpoint";
         return;
     }
 
@@ -62,10 +65,10 @@ void UsbGadgetReader::executeRead()
     QByteArray dataBuffer{dataSize, '\0'};
     count = m_readEndpoint->read(dataBuffer.data(), dataBuffer.size());
     if (count == -1) {
-        qWarning() << "error in reading data from endpoint";
+        qCWarning(usbC) << "Could not read message payload from endpoint";
         return;
     } else if (count < dataBuffer.size()) {
-        qWarning() << "error: read" << count << "out of" << headerBuffer.size() << "byte data from endpoint";
+        qCWarning(usbC) << "Could only read" << count << "out of" << headerBuffer.size() << "byte payload from endpoint";
         return;
     }
 

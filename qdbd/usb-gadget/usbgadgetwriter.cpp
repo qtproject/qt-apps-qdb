@@ -25,7 +25,10 @@
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtCore/qtimer.h>
+
+Q_DECLARE_LOGGING_CATEGORY(usbC);
 
 UsbGadgetWriter::UsbGadgetWriter(QFile *writeEndpoint)
     : m_writeEndpoint{writeEndpoint}
@@ -36,14 +39,14 @@ UsbGadgetWriter::UsbGadgetWriter(QFile *writeEndpoint)
 void UsbGadgetWriter::write(QByteArray data)
 {
     if (!m_writeEndpoint->isOpen()) {
-        qWarning() << "UsbGadgetWriter: Tried to write to a closed endpoint";
+        qCCritical(usbC) << "Tried to write to a closed endpoint";
         emit writeDone(false);
         return;
     }
 
     auto written = m_writeEndpoint->write(data);
     if (written != data.size()) {
-        qWarning() << "UsbGadgetWriter: Write to endpoint failed";
+        qCCritical(usbC) << "Could not write to endpoint";
         emit writeDone(false);
     }
     emit writeDone(true);

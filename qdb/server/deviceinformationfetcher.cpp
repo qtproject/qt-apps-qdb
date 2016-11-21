@@ -26,6 +26,9 @@
 #include "usb-host/usbconnection.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(deviceInfoC, "qdb.devices.info");
 
 bool operator==(const DeviceInformation &lhs, const DeviceInformation &rhs)
 {
@@ -49,19 +52,19 @@ DeviceInformationFetcher::DeviceInformationFetcher(UsbDevice device)
     connect(this, &DeviceInformationFetcher::fetched, m_connection, &QObject::deleteLater);
 
     if (!m_connection->initialize()) {
-        qCritical() << "DeviceInformationFetcher: Could not initialize connection to" << device.serial;
+        qCCritical(deviceInfoC) << "Could not initialize connection to" << device.serial << "for fetching device information";
         return;
     }
 
     m_connection->connect();
     m_connected = true;
-    qDebug() << "Initialized connection to" << device.serial;
+    qCDebug(deviceInfoC) << "Initialized connection to" << device.serial;
 }
 
 void DeviceInformationFetcher::fetch()
 {
     if (!m_connected) {
-        qDebug() << "Not fetching device information due to no connection";
+        qCWarning(deviceInfoC) << "Not fetching device information due to no connection";
         emit fetched(DeviceInformation{"", "", "", m_deviceAddress});
         return;
     }
@@ -81,9 +84,9 @@ void DeviceInformationFetcher::fetch()
 
 void DeviceInformationFetcher::handshakeResponse(QString serial, QString hostMac, QString ipAddress)
 {
-    qDebug() << "Handshakeservice responded:";
-    qDebug() << "    Device serial:" << serial;
-    qDebug() << "    Host-side MAC address:" << hostMac;
-    qDebug() << "    Device IP address:" << ipAddress;
+    qCDebug(deviceInfoC) << "Fetched device information:";
+    qCDebug(deviceInfoC) << "    Device serial:" << serial;
+    qCDebug(deviceInfoC) << "    Host-side MAC address:" << hostMac;
+    qCDebug(deviceInfoC) << "    Device IP address:" << ipAddress;
     emit fetched(DeviceInformation{serial, hostMac, ipAddress, m_deviceAddress});
 }

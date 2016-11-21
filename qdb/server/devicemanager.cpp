@@ -23,7 +23,10 @@
 #include "networkmanagercontrol.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
 #include <QtDBus/QDBusObjectPath>
+
+Q_LOGGING_CATEGORY(devicesC, "qdb.devices");
 
 DeviceManager::DeviceManager(QObject *parent)
     : QObject{parent},
@@ -53,19 +56,19 @@ void DeviceManager::handleDeviceInformation(DeviceInformation deviceInfo)
 {
     m_fetching = false;
     if (deviceInfo.hostMac.isEmpty()) {
-        qWarning() << "Could not fetch device information from" << m_fetchingDevice.serial;
+        qCWarning(devicesC) << "Could not fetch device information from" << m_fetchingDevice.serial;
         return; // Discard the device
     }
 
-    qDebug() << "Configuring network for" << deviceInfo.serial;
+    qCDebug(devicesC) << "Configuring network for" << deviceInfo.serial;
     configureUsbNetwork(deviceInfo.serial, deviceInfo.hostMac);
 
     if (deviceInfo.ipAddress.isEmpty()) {
-        qDebug() << "Incomplete information received for" << deviceInfo.serial;
+        qCDebug(devicesC) << "Incomplete information received for" << deviceInfo.serial;
         m_incompleteDevices.enqueue(m_fetchingDevice);
         QTimer::singleShot(1000, this, &DeviceManager::fetchIncomplete);
     } else {
-        qDebug() << "Complete info received for" << deviceInfo.serial;
+        qCDebug(devicesC) << "Complete info received for" << deviceInfo.serial;
     }
 
     auto iter = std::find_if(m_deviceInfos.begin(), m_deviceInfos.end(),
@@ -73,11 +76,11 @@ void DeviceManager::handleDeviceInformation(DeviceInformation deviceInfo)
                                  return deviceInfo.serial == oldInfo.serial;
                              });
     if (iter == m_deviceInfos.end()) {
-        qDebug() << "Added new info for" << deviceInfo.serial;
+        qCDebug(devicesC) << "Added new info for" << deviceInfo.serial;
         m_deviceInfos.push_back(deviceInfo);
         emit newDeviceInfo(deviceInfo);
     } else if (*iter != deviceInfo) {
-        qDebug() << "Replaced old info for" << deviceInfo.serial;
+        qCDebug(devicesC) << "Replaced old info for" << deviceInfo.serial;
         *iter = deviceInfo;
         emit newDeviceInfo(deviceInfo);
     }
@@ -88,7 +91,7 @@ void DeviceManager::handleDeviceInformation(DeviceInformation deviceInfo)
 
 void DeviceManager::handlePluggedInDevice(UsbDevice device)
 {
-    qDebug() << "Device" << device.serial << "plugged in at" << device.address.busNumber << ":" << device.address.deviceAddress;
+    qCDebug(devicesC) << "Device" << device.serial << "plugged in at" << device.address.busNumber << ":" << device.address.deviceAddress;
     if (m_fetching)
         m_newDevices.enqueue(device);
     else
@@ -97,7 +100,7 @@ void DeviceManager::handlePluggedInDevice(UsbDevice device)
 
 void DeviceManager::handleUnpluggedDevice(UsbAddress address)
 {
-    qDebug() << "Device unplugged from" << address.busNumber << ":" << address.deviceAddress;
+    qCDebug(devicesC) << "Device unplugged from" << address.busNumber << ":" << address.deviceAddress;
 
     auto deviceAddressMatches = [&](const UsbDevice &device) {
         return device.address == address;
@@ -128,7 +131,7 @@ void DeviceManager::handleUnpluggedDevice(UsbAddress address)
 
 void DeviceManager::fetchDeviceInformation(UsbDevice device)
 {
-    qDebug() << "Fetching device information for" << device.serial;
+    qCDebug(devicesC) << "Fetching device information for" << device.serial;
     Q_ASSERT(!m_fetching);
     m_fetching = true;
     m_fetchingDevice = device;
@@ -145,7 +148,7 @@ void DeviceManager::fetchIncomplete()
         return;
 
     if (m_fetching) {
-        qDebug() << "Delaying fetching incomplete information due to fetch in progress";
+        qCDebug(devicesC) << "Delaying fetching incomplete information due to fetch in progress";
         QTimer::singleShot(500, this, &DeviceManager::fetchIncomplete);
         return;
     }

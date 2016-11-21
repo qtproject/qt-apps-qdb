@@ -25,6 +25,9 @@
 #include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(handshakeC, "qdb.services.handshake");
 
 HandshakeService::HandshakeService(Connection *connection)
     : m_connection{connection},
@@ -54,7 +57,7 @@ bool HandshakeService::hasStream() const
 void HandshakeService::ask()
 {
     if (!m_stream) {
-        qCritical() << "No valid stream in HandshakeService when trying to send";
+        qCCritical(handshakeC) << "No valid stream in HandshakeService when trying to send";
         return;
     }
     StreamPacket packet{};

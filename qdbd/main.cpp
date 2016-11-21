@@ -52,18 +52,18 @@ int main(int argc, char *argv[])
 
     QString filterRules;
     if (!parser.isSet("debug-transport")) {
-        filterRules.append("transport=false\n");
+        filterRules.append("transport.debug=false\n");
     }
     if (!parser.isSet("debug-connection")) {
-        filterRules.append("connection=false\n");
+        filterRules.append("connection.debug=false\n");
     }
     QLoggingCategory::setFilterRules(filterRules);
 
     Server server{new QdbTransport{new UsbGadget{}}};
     if (server.initialize()) {
-        qDebug() << "initialized server";
+        qDebug() << "Initialized device server";
     } else {
-        qDebug() << "could not initialize server";
+        qCritical() << "Could not initialize device server";
         return 1;
     }
 

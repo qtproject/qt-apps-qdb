@@ -28,7 +28,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
 
-Q_LOGGING_CATEGORY(connectionC, "connection");
+Q_LOGGING_CATEGORY(connectionC, "qdb.connection");
 
 Connection::Connection(QdbTransport *transport, QObject *parent)
     : AbstractConnection{transport, parent},
@@ -104,19 +104,19 @@ void Connection::handleMessage()
         qFatal("Connection received QdbMessage::Open, which is not supported!");
 
     if (message.command() == QdbMessage::Invalid) {
-        qCritical("Connection received invalid message!");
+        qCCritical(connectionC) << "Connection received invalid message!";
         resetConnection(false);
         return;
     }
 
     switch (m_state) {
     case ConnectionState::Disconnected:
-        qWarning() << "Connection got a message in Disconnected state";
+        qCWarning(connectionC) << "Connection got a message in Disconnected state";
         resetConnection(true);
         break;
     case ConnectionState::WaitingForConnection:
         if (message.command() != QdbMessage::Connect) {
-            qWarning() << "Connection got a non-Connect message in WaitingForConnection state";
+            qCWarning(connectionC) << "Connection got a non-Connect message in WaitingForConnection state";
             resetConnection(true);
             break;
         }
@@ -128,7 +128,7 @@ void Connection::handleMessage()
     case ConnectionState::Connected:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qWarning() << "Connection received QdbMessage::Connect while already connected. Reconnecting.";
+            qCWarning(connectionC) << "Connection received QdbMessage::Connect while already connected. Reconnecting.";
             resetConnection(true);
             break;
         case QdbMessage::Write:
@@ -138,7 +138,7 @@ void Connection::handleMessage()
             closeStream(message.hostStream());
             break;
         case QdbMessage::Ok:
-            qWarning() << "Connection received QdbMessage::Ok in connected state";
+            qCWarning(connectionC) << "Connection received QdbMessage::Ok in connected state";
             break;
         case QdbMessage::Open:
             //[[fallthrough]]
@@ -150,7 +150,7 @@ void Connection::handleMessage()
     case ConnectionState::Waiting:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qWarning() << "Connection received QdbMessage::Connect while already connected and waiting. Reconnecting.";
+            qCWarning(connectionC) << "Connection received QdbMessage::Connect while already connected and waiting. Reconnecting.";
             resetConnection(true);
             break;
         case QdbMessage::Write:
@@ -184,7 +184,7 @@ void Connection::acknowledge(StreamId hostId, StreamId deviceId)
 
     QdbMessage message{QdbMessage::Ok, hostId, deviceId};
     if (!m_transport->send(message)) {
-        qCritical() << "Connection could not send" << message;
+        qCCritical(connectionC) << "Connection could not send" << message;
         resetConnection(false);
         return;
     }
@@ -212,7 +212,7 @@ void Connection::processQueue()
                "Tried to send invalid message");
 
     if (!m_transport->send(message)) {
-        qCritical() << "Connection could not send" << message;
+        qCCritical(connectionC) << "Connection could not send" << message;
         resetConnection(false);
         return;
     }
@@ -283,7 +283,7 @@ void Connection::finishCreateStream(StreamId hostId, StreamId deviceId)
 void Connection::handleWrite(const QdbMessage &message)
 {
     if (m_streams.find(message.hostStream()) == m_streams.end()) {
-        qWarning() << "Connection received message to non-existing stream" << message.hostStream();
+        qCWarning(connectionC) << "Connection received message to non-existing stream" << message.hostStream();
         enqueueMessage(QdbMessage{QdbMessage::Close, message.hostStream(), message.deviceStream()});
         return;
     }
@@ -301,8 +301,8 @@ bool Connection::checkVersion(const QdbMessage &message)
     dataStream >> protocolVersion;
 
     if (protocolVersion != qdbProtocolVersion) {
-        qCritical() << "Device offered protocol version" << protocolVersion << ", but only version"
-                   << qdbProtocolVersion << "is supported";
+        qCCritical(connectionC) << "Device offered protocol version" << protocolVersion
+                                << ", but only version" << qdbProtocolVersion << "is supported";
         return false;
     }
     return true;

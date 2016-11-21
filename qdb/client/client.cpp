@@ -188,8 +188,8 @@ void Client::handleWatchMessage()
 
         const auto type = responseType(document.object());
         if (type != ResponseType::NewDevice && type != ResponseType::DisconnectedDevice) {
-            qDebug() << "Shutting down due to unexpected response:" << responseBytes;
-            shutdown(0);
+            std::cerr << "Shutting down due to unexpected response:" << responseBytes.data();
+            shutdown(1);
         }
     }
 }

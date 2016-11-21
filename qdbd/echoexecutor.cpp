@@ -23,6 +23,9 @@
 #include "libqdb/stream.h"
 
 #include <QtCore/qdebug.h>
+#include <QtCore/qloggingcategory.h>
+
+Q_LOGGING_CATEGORY(echoC, "qdb.executors.echo");
 
 EchoExecutor::EchoExecutor(Stream *stream)
     : m_stream{stream}
@@ -33,6 +36,6 @@ EchoExecutor::EchoExecutor(Stream *stream)
 
 void EchoExecutor::receive(StreamPacket packet)
 {
-    qDebug() << "EchoExecutor received:" << packet.buffer();
+    qCDebug(echoC) << "EchoExecutor received:" << packet.buffer();
     m_stream->write(packet);
 }
