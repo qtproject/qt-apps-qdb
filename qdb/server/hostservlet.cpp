@@ -47,8 +47,7 @@ ServletId newServletId()
 HostServlet::HostServlet(QLocalSocket *socket, DeviceManager &deviceManager)
     : m_id{newServletId()},
       m_socket{socket},
-      m_deviceManager{deviceManager}
-
+      m_deviceManager(deviceManager) // Can't use uniform initialization with {} due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=50025
 {
 
 }
