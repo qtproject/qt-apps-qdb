@@ -31,9 +31,11 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+    QCoreApplication::setApplicationVersion(QString{"%1, based on Qt %2"}.arg(QDB_VERSION).arg(QT_VERSION_STR));
 
     QCommandLineParser parser;
     parser.addHelpOption();
+    parser.addVersionOption();
     parser.addOption({"debug-transport", "Show each transmitted message"});
     parser.addOption({"debug-connection", "Show enqueued messages"});
     parser.addOption({"ffs-dir", "Directory to the USB Function File System endpoints to use", "directory"});

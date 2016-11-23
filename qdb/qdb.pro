@@ -17,6 +17,8 @@ win32 {
     LIBS += -llibusb-1.0
 }
 
+include($$PWD/../version.pri)
+
 HEADERS += \
     client/client.h \
     hostmessages.h \

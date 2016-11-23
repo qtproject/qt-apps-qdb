@@ -30,11 +30,13 @@
 int main(int argc, char *argv[])
 {
     QCoreApplication app{argc, argv};
+    QCoreApplication::setApplicationVersion(QString{"%1, based on Qt %2"}.arg(QDB_VERSION).arg(QT_VERSION_STR));
 
     QStringList clientCommands = {"devices", "stop-server", "watch-devices"};
 
     QCommandLineParser parser;
     parser.addHelpOption();
+    parser.addVersionOption();
     parser.addOption({"debug-transport", "Print each message that is sent. (Only server process)"});
     parser.addOption({"debug-connection", "Show enqueued messages. (Only server process)"});
     auto commandList = clientCommands;

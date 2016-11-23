@@ -9,6 +9,8 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
+include($$PWD/../version.pri)
+
 SOURCES += \
     configuration.cpp \
     createexecutor.cpp \
