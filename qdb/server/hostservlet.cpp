@@ -80,6 +80,17 @@ void HostServlet::handleRequest()
     const auto request = QJsonDocument::fromJson(requestBytes);
     const auto type = requestType(request.object());
 
+    // Skip version check for requests to stop the server, to allow mismatching
+    // client to still stop the server
+    if (!checkHostMessageVersion(request.object()) && type != RequestType::StopServer) {
+        qCWarning(hostServerC) << "Request from client" << m_id << "was of an unsupported version";
+        QJsonObject response = initializeResponse(ResponseType::UnsupportedVersion);
+        response["supported-version"] = qdbHostMessageVersion;
+        m_socket->write(serialiseResponse(response));
+        close();
+        return;
+    }
+
     switch (type) {
     case RequestType::Devices:
         replyDevices();

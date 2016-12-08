@@ -25,122 +25,35 @@
 #include <QtCore/qjsondocument.h>
 #include <QtCore/qjsonobject.h>
 
+const int qdbHostMessageVersion = 1;
+bool checkHostMessageVersion(const QJsonObject &obj);
+
 enum class RequestType
 {
+    Unknown = 0,
     Devices,
     WatchDevices,
     StopServer,
-    Unknown
 };
+
+QByteArray createRequest(const RequestType &type);
+RequestType requestType(const QJsonObject &obj);
+QString requestTypeString(const RequestType &type);
 
 enum class ResponseType
 {
+    Unknown = 0,
     Devices,
     NewDevice,
     DisconnectedDevice,
     Stopping,
     InvalidRequest,
-    Unknown
+    UnsupportedVersion,
 };
 
-inline
-QString responseTypeString(const ResponseType &type)
-{
-    const QString devicesValue = "devices";
-    const QString newDeviceValue = "new-device";
-    const QString disconnectedDeviceValue = "disconnected-device";
-    const QString stoppingValue = "stopping";
-    const QString invalidRequestValue = "invalid-request";
-
-    switch (type) {
-    case ResponseType::Devices:
-        return devicesValue;
-    case ResponseType::NewDevice:
-        return newDeviceValue;
-    case ResponseType::DisconnectedDevice:
-        return disconnectedDeviceValue;
-    case ResponseType::Stopping:
-        return stoppingValue;
-    case ResponseType::InvalidRequest:
-        return invalidRequestValue;
-    case ResponseType::Unknown:
-        break;
-    }
-    qFatal("Tried to use unknown response type as a value in responseTypeString");
-}
-
-inline
-QString requestTypeString(const RequestType &type)
-{
-    const QString devicesValue = "devices";
-    const QString watchDevicesValue = "watch-devices";
-    const QString stopServerValue = "stop-server";
-
-    switch (type) {
-    case RequestType::Devices:
-        return devicesValue;
-    case RequestType::WatchDevices:
-        return watchDevicesValue;
-    case RequestType::StopServer:
-        return stopServerValue;
-    case RequestType::Unknown:
-        break;
-    }
-    qFatal("Tried to use unknown request type as a value in requestTypeString");
-}
-
-inline
-ResponseType responseType(const QJsonObject &obj)
-{
-    const auto fieldValue = obj["response"];
-    if (fieldValue == responseTypeString(ResponseType::Devices))
-        return ResponseType::Devices;
-    if (fieldValue == responseTypeString(ResponseType::NewDevice))
-        return ResponseType::NewDevice;
-    if (fieldValue == responseTypeString(ResponseType::DisconnectedDevice))
-        return ResponseType::DisconnectedDevice;
-    if (fieldValue == responseTypeString(ResponseType::Stopping))
-        return ResponseType::Stopping;
-    if (fieldValue == responseTypeString(ResponseType::InvalidRequest))
-        return ResponseType::InvalidRequest;
-
-    return ResponseType::Unknown;
-}
-
-inline
-RequestType requestType(const QJsonObject &obj)
-{
-    const auto fieldValue = obj["request"];
-    if (fieldValue == requestTypeString(RequestType::Devices))
-        return RequestType::Devices;
-    if (fieldValue == requestTypeString(RequestType::WatchDevices))
-        return RequestType::WatchDevices;
-    if (fieldValue == requestTypeString(RequestType::StopServer))
-        return RequestType::StopServer;
-
-    return RequestType::Unknown;
-}
-
-inline
-QByteArray createRequest(const RequestType &type)
-{
-    QJsonObject obj;
-    obj["request"] = requestTypeString(type);
-    return QJsonDocument{obj}.toJson(QJsonDocument::Compact).append('\n');
-}
-
-inline
-QJsonObject initializeResponse(const ResponseType &type)
-{
-    QJsonObject obj;
-    obj["response"] = responseTypeString(type);
-    return obj;
-}
-
-inline
-QByteArray serialiseResponse(const QJsonObject &obj)
-{
-    return QJsonDocument{obj}.toJson(QJsonDocument::Compact).append('\n');
-}
+QJsonObject initializeResponse(const ResponseType &type);
+ResponseType responseType(const QJsonObject &obj);
+QString responseTypeString(const ResponseType &type);
+QByteArray serialiseResponse(const QJsonObject &obj);
 
 #endif // HOSTMESSAGES_H

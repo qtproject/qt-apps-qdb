@@ -40,6 +40,7 @@ HEADERS += \
 
 SOURCES += \
     client/client.cpp \
+    hostmessages.cpp \
     main.cpp \
     server/connection.cpp \
     server/deviceinformationfetcher.cpp \
