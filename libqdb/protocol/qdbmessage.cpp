@@ -114,6 +114,8 @@ QdbMessage::CommandType toCommandType(uint32_t command)
     switch (command) {
     case static_cast<uint32_t>(QdbMessage::Connect):
         return QdbMessage::Connect;
+    case static_cast<uint32_t>(QdbMessage::Refuse):
+        return QdbMessage::Refuse;
     case static_cast<uint32_t>(QdbMessage::Open):
         return QdbMessage::Open;
     case static_cast<uint32_t>(QdbMessage::Write):
@@ -166,6 +168,9 @@ QDebug &operator<<(QDebug &stream, ::QdbMessage::CommandType command)
         break;
     case QdbMessage::Connect:
         stream << "Connect";
+        break;
+    case QdbMessage::Refuse:
+        stream << "Refuse";
         break;
     case QdbMessage::Open:
         stream << "Open";

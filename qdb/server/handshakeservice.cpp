@@ -44,6 +44,7 @@ HandshakeService::~HandshakeService()
 
 void HandshakeService::initialize()
 {
+    connect(m_connection, &Connection::disconnected, this, &HandshakeService::handleDisconnected);
     m_connection->createStream(tagBuffer(HandshakeTag), [=](Stream *stream) {
         this->streamCreated(stream);
     });
@@ -85,6 +86,18 @@ void HandshakeService::receive(StreamPacket packet)
 void HandshakeService::onStreamClosed()
 {
     Service::onStreamClosed();
-    if (!m_responded)
+    failedResponse();
+}
+
+void HandshakeService::handleDisconnected()
+{
+    failedResponse();
+}
+
+void HandshakeService::failedResponse()
+{
+    if (!m_responded) {
         emit response("", "", "");
+        m_responded = true;
+    }
 }

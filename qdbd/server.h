@@ -22,6 +22,7 @@
 #define SERVER_H
 
 #include "libqdb/abstractconnection.h"
+#include "libqdb/protocol/protocol.h"
 class Executor;
 class QdbMessage;
 class QdbTransport;
@@ -52,11 +53,13 @@ public slots:
 
 private:
     void processQueue();
+    void handleConnect(const QByteArray &payload);
     void handleOpen(StreamId hostId, const QByteArray &tag);
-    void resetServer(bool hostConnected);
+    void refuse(RefuseReason reason);
+    void resetServer();
     void handleWrite(const QdbMessage &message);
     void closeStream(StreamId id);
-    void checkVersion(const QdbMessage &message);
+    bool checkVersion(const QByteArray &payload);
 
     ServerState m_state;
     std::unordered_map<StreamId, std::unique_ptr<Executor>> m_executors;

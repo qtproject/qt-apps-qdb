@@ -56,6 +56,9 @@ public:
 
     void enqueueMessage(const QdbMessage &message) override;
 
+signals:
+    void disconnected();
+
 public slots:
     void close();
     void handleMessage() override;
@@ -66,6 +69,7 @@ private:
     void resetConnection(bool reconnect);
     void closeStream(StreamId id);
     void finishCreateStream(StreamId hostId, StreamId deviceId);
+    void handleRefuse(const QByteArray &payload);
     void handleWrite(const QdbMessage &message);
     bool checkVersion(const QdbMessage &message);
 

@@ -34,18 +34,39 @@
 const int testTimeout = 500; // in milliseconds
 
 // Helper to initialize Connection in testcases
-struct ConnectionContext
+class ConnectionContext
 {
+public:
     ConnectionContext()
-        : deviceEnumerator{},
-          connection{new QdbTransport{new UsbConnection{deviceEnumerator.listUsbDevices()[0]}}}
+        : m_connection{nullptr},
+          m_valid{false}
     {
-        QVERIFY(connection.initialize());
+        UsbDeviceEnumerator deviceEnumerator;
+        const auto devices = deviceEnumerator.listUsbDevices();
+        if (devices.empty())
+            QFAIL("Could not find QDB USB device to run the test against");
 
-        connection.connect();
+        m_connection = make_unique<Connection>(new QdbTransport{new UsbConnection{devices[0]}});
+
+        QVERIFY(m_connection->initialize());
+        m_valid = true;
+
+        m_connection->connect();
     }
-    UsbDeviceEnumerator deviceEnumerator;
-    Connection connection;
+
+    Connection *connection()
+    {
+        return m_connection.get();
+    }
+
+    bool isValid()
+    {
+        return m_valid;
+    }
+
+private:
+    std::unique_ptr<Connection> m_connection;
+    bool m_valid;
 };
 
 class ServiceTest : public QObject
@@ -58,8 +79,9 @@ private slots:
 void ServiceTest::echo()
 {
     ConnectionContext ctx;
+    QVERIFY(ctx.isValid());
 
-    EchoService echo{&ctx.connection};
+    EchoService echo{ctx.connection()};
     connect(&echo, &EchoService::initialized, [&]() {
         echo.send("ABCD");
     });

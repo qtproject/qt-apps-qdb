@@ -42,6 +42,7 @@ public:
     {
         Invalid = 0, // never sent
         Connect = 0x434e584e, // CNXN
+        Refuse =  0x52465345, // RFSE
         Open = 0x4f50454e, // OPEN
         Write = 0x57525445, // WRTE
         Close = 0x434c5345, // CLSE
@@ -75,6 +76,7 @@ private:
 Q_DECLARE_METATYPE(QdbMessage::CommandType)
 
 QT_BEGIN_NAMESPACE
+QDebug &operator<<(QDebug &stream, ::QdbMessage::CommandType command);
 QDebug &operator<<(QDebug &stream, const ::QdbMessage &message);
 
 QDataStream &operator<<(QDataStream &stream, const ::QdbMessage &message);

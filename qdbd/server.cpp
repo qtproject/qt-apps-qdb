@@ -23,7 +23,6 @@
 #include "createexecutor.h"
 #include "echoexecutor.h"
 #include "libqdb/make_unique.h"
-#include "libqdb/protocol/protocol.h"
 #include "libqdb/protocol/qdbmessage.h"
 #include "libqdb/protocol/qdbtransport.h"
 #include "libqdb/stream.h"
@@ -49,24 +48,26 @@ void Server::handleMessage()
 {
     QdbMessage message = m_transport->receive();
 
-    Q_ASSERT_X(message.command() != QdbMessage::Invalid, "Server::handleMessage()", "Received invalid message");
+    if (message.command() == QdbMessage::Invalid)
+        qFatal("Server received Invalid message, which is not supported");
+
+    if (message.command() == QdbMessage::Refuse)
+        qFatal("Server received Refuse message, which is not supported");
 
     switch (m_state) {
     case ServerState::Disconnected:
         if (message.command() != QdbMessage::Connect) {
-            qCWarning(connectionC) << "Server got non-Connect message in Disconnected state. Resetting.";
-            resetServer(false);
+            qCWarning(connectionC) << "Server got non-Connect message in Disconnected state. Refusing.";
+            refuse(RefuseReason::NotConnected);
             break;
         }
-        checkVersion(message);
-        resetServer(true);
+        handleConnect(message.data());
         break;
     case ServerState::Connected:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qCWarning(connectionC()) << "Server received QdbMessage::Connect while already connected. Resetting.";
-            checkVersion(message);
-            resetServer(true);
+            qCWarning(connectionC) << "Server received QdbMessage::Connect while already connected. Resetting.";
+            handleConnect(message.data());
             break;
         case QdbMessage::Open:
             handleOpen(message.hostStream(), message.data());
@@ -80,6 +81,8 @@ void Server::handleMessage()
         case QdbMessage::Ok:
             qCWarning(connectionC) << "Server received QdbMessage::Ok in connected state";
             break;
+        case QdbMessage::Refuse:
+            //[[fallthrough]]
         case QdbMessage::Invalid:
             Q_UNREACHABLE();
             break;
@@ -88,8 +91,8 @@ void Server::handleMessage()
     case ServerState::Waiting:
         switch (message.command()) {
         case QdbMessage::Connect:
-            qCWarning(connectionC()) << "Server received QdbMessage::Connect while already connected and waiting. Resetting.";
-            resetServer(true);
+            qCWarning(connectionC) << "Server received QdbMessage::Connect while already connected and waiting. Resetting.";
+            handleConnect(message.data());
             break;
         case QdbMessage::Open:
             handleOpen(message.hostStream(), message.data());
@@ -104,6 +107,8 @@ void Server::handleMessage()
         case QdbMessage::Ok:
             m_state = ServerState::Connected;
             break;
+        case QdbMessage::Refuse:
+            //[[fallthrough]]
         case QdbMessage::Invalid:
             Q_UNREACHABLE();
             break;
@@ -123,9 +128,8 @@ void Server::enqueueMessage(const QdbMessage &message)
 
 void Server::processQueue()
 {
-    if (m_outgoingMessages.isEmpty()) {
+    if (m_outgoingMessages.isEmpty())
         return;
-    }
 
     if (m_state == ServerState::Waiting) {
         qCDebug(connectionC) << "Server::processQueue() skipping to wait for QdbMessage::Ok";
@@ -144,6 +148,9 @@ void Server::processQueue()
     }
 
     switch (message.command()) {
+    case QdbMessage::Refuse:
+        m_state = ServerState::Disconnected;
+        break;
     case QdbMessage::Open:
         qFatal("Server sending QdbMessage::Open is not supported");
         break;
@@ -171,6 +178,23 @@ void Server::processQueue()
     }
 }
 
+void Server::handleConnect(const QByteArray &payload)
+{
+    if (!checkVersion(payload)) {
+        refuse(RefuseReason::UnknownVersion);
+        return;
+    }
+
+    resetServer();
+    m_state = ServerState::Connected;
+
+    QByteArray buffer{};
+    QDataStream dataStream{&buffer, QIODevice::WriteOnly};
+    dataStream << qdbProtocolVersion;
+
+    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0, buffer});
+}
+
 void Server::handleOpen(StreamId hostId, const QByteArray &tag)
 {
     StreamId deviceId = m_nextStreamId++;
@@ -179,18 +203,25 @@ void Server::handleOpen(StreamId hostId, const QByteArray &tag)
     m_executors[deviceId] = createExecutor(m_streams[deviceId].get(), tag);
 }
 
-void Server::resetServer(bool hostConnected)
+void Server::refuse(RefuseReason reason)
+{
+    resetServer();
+    QByteArray buffer{};
+    QDataStream stream{&buffer, QIODevice::WriteOnly};
+    stream << static_cast<uint32_t>(reason);
+
+    if (reason == RefuseReason::UnknownVersion)
+        stream << qdbProtocolVersion;
+
+    m_state = ServerState::Disconnected;
+    enqueueMessage(QdbMessage{QdbMessage::Refuse, 0, 0, buffer});
+}
+
+void Server::resetServer()
 {
     m_outgoingMessages.clear();
     m_executors.clear();
     m_streams.clear();
-    m_state = hostConnected ? ServerState::Connected : ServerState::Disconnected;
-
-    QByteArray buffer{};
-    QDataStream dataStream{&buffer, QIODevice::WriteOnly};
-    dataStream << qdbProtocolVersion;
-
-    enqueueMessage(QdbMessage{QdbMessage::Connect, 0, 0, buffer});
 }
 
 void Server::handleWrite(const QdbMessage &message)
@@ -224,18 +255,22 @@ void Server::closeStream(StreamId id)
     // Closes are not acknowledged
 }
 
-void Server::checkVersion(const QdbMessage &message)
+bool Server::checkVersion(const QByteArray &payload)
 {
-    Q_ASSERT(message.command() == QdbMessage::Connect);
-    Q_ASSERT(message.data().size() == sizeof(qdbProtocolVersion));
+    if (static_cast<size_t>(payload.size()) < sizeof(qdbProtocolVersion)) {
+       qCCritical(connectionC) << "Connection request did not contain a protocol version";
+       return false;
+    };
 
-    QDataStream dataStream{message.data()};
+    QDataStream dataStream{payload};
     uint32_t protocolVersion;
     dataStream >> protocolVersion;
 
     if (protocolVersion != qdbProtocolVersion) {
-        qCCritical(connectionC()) << "Protocol version" << protocolVersion << "requested, but only version"
-                                  << qdbProtocolVersion << "is known";
+        qCWarning(connectionC) << "Protocol version" << protocolVersion << "requested, but only version"
+                               << qdbProtocolVersion << "is known";
+        return false;
     }
+    return true;
 }
 

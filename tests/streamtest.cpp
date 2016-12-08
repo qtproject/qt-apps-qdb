@@ -46,7 +46,11 @@ public slots:
     void run()
     {
         UsbDeviceEnumerator deviceManager;
-        m_transport = make_unique<QdbTransport>(new UsbConnection{deviceManager.listUsbDevices()[0]});
+        const auto devices = deviceManager.listUsbDevices();
+        if (devices.empty())
+            QFAIL("Could not find QDB USB device to run the test against");
+
+        m_transport = make_unique<QdbTransport>(new UsbConnection{devices[0]});
         if (m_transport->open()) {
             qDebug() << "opened transport";
             connect(m_transport.get(), &QdbTransport::messageAvailable, this, &TestCase::testPhases);
@@ -179,7 +183,7 @@ public slots:
     {
         switch (m_phase) {
         case 0: {
-                QByteArray unsupported{};
+                QByteArray unsupported;
                 QDataStream dataStream{&unsupported, QIODevice::WriteOnly};
                 dataStream << (qdbProtocolVersion + 1);
                 QdbMessage connect{QdbMessage::Connect, 0, 0, unsupported};
@@ -188,10 +192,16 @@ public slots:
             }
         case 1: {
                 QdbMessage response = m_transport->receive();
-                QCOMPARE(response.command(), QdbMessage::Connect);
+                QCOMPARE(response.command(), QdbMessage::Refuse);
                 QCOMPARE(response.hostStream(), 0u);
                 QCOMPARE(response.deviceStream(), 0u);
-                QCOMPARE(response.data(), m_versionBuffer);
+                QDataStream dataStream{response.data()};
+                uint32_t reason;
+                dataStream >> reason;
+                QCOMPARE(reason, static_cast<uint32_t>(RefuseReason::UnknownVersion));
+                uint32_t version;
+                dataStream >> version;
+                QCOMPARE(version, qdbProtocolVersion);
 
                 emit passed();
                 break;
@@ -464,6 +474,51 @@ private:
     StreamId m_deviceId2 = 0;
 };
 
+class WriteWithoutConnectingTest : public TestCase
+{
+    Q_OBJECT
+public slots:
+    void testPhases() override
+    {
+        switch (m_phase) {
+        case 0: {
+                // Send Connect with unknown version to ensure not connected state.
+                // Otherwise the device will still be connected due to previous
+                // tests establishing the connection.
+                QByteArray unsupported;
+                QDataStream dataStream{&unsupported, QIODevice::WriteOnly};
+                dataStream << (qdbProtocolVersion + 1);
+                QdbMessage connect{QdbMessage::Connect, 0, 0, unsupported};
+                QVERIFY(m_transport->send(connect));
+                break;
+            }
+        case 1: {
+                QdbMessage response = m_transport->receive();
+                QCOMPARE(response.command(), QdbMessage::Refuse);
+
+                QByteArray data{"ABCD"};
+                QdbMessage write{QdbMessage::Write, 1, 1, data};
+                QVERIFY(m_transport->send(write));
+                break;
+            }
+        case 2: {
+                QdbMessage response = m_transport->receive();
+                QCOMPARE(response.command(), QdbMessage::Refuse);
+                QCOMPARE(response.hostStream(), 0u);
+                QCOMPARE(response.deviceStream(), 0u);
+                QByteArray expectedReason;
+                QDataStream dataStream{&expectedReason, QIODevice::WriteOnly};
+                dataStream << static_cast<uint32_t>(RefuseReason::NotConnected);
+                QCOMPARE(response.data(), expectedReason);
+
+                emit passed();
+                break;
+            }
+        }
+        ++m_phase;
+    }
+};
+
 void testCase(TestCase *test)
 {
     QSignalSpy spy{test, &TestCase::passed};
@@ -509,6 +564,12 @@ private slots:
     void twoEchoStreamsTest()
     {
         TwoEchoStreamsTest test;
+        testCase(&test);
+    }
+
+    void writeWithoutConnecting()
+    {
+        WriteWithoutConnectingTest test;
         testCase(&test);
     }
 };

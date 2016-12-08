@@ -50,6 +50,9 @@ protected slots:
     void onStreamClosed() override;
 
 private:
+    void handleDisconnected();
+    void failedResponse();
+
     Connection *m_connection;
     bool m_responded;
 };

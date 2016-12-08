@@ -21,11 +21,21 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include <QtCore/qbytearray.h>
+#include <QtCore/qdatastream.h>
+
 #include <cstdint>
 
 const int qdbHeaderSize = 4*sizeof(uint32_t);
 const int qdbMessageSize = 16*1024;
 const int qdbMaxPayloadSize = qdbMessageSize - qdbHeaderSize;
-const uint32_t qdbProtocolVersion = 0;
+const uint32_t qdbProtocolVersion = 1;
+
+enum class RefuseReason : uint32_t
+{
+    Invalid = 0, // Never used except for deserialization failure
+    NotConnected,
+    UnknownVersion,
+};
 
 #endif

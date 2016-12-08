@@ -30,6 +30,17 @@
 
 Q_LOGGING_CATEGORY(connectionC, "qdb.connection");
 
+RefuseReason toRefuseReason(uint32_t data)
+{
+    switch (data) {
+    case static_cast<uint32_t>(RefuseReason::NotConnected):
+        return RefuseReason::NotConnected;
+    case static_cast<uint32_t>(RefuseReason::UnknownVersion):
+        return RefuseReason::UnknownVersion;
+    }
+    return RefuseReason::Invalid;
+}
+
 Connection::Connection(QdbTransport *transport, QObject *parent)
     : AbstractConnection{transport, parent},
       m_state{ConnectionState::Disconnected},
@@ -115,21 +126,29 @@ void Connection::handleMessage()
         resetConnection(true);
         break;
     case ConnectionState::WaitingForConnection:
-        if (message.command() != QdbMessage::Connect) {
-            qCWarning(connectionC) << "Connection got a non-Connect message in WaitingForConnection state";
+        if (message.command() != QdbMessage::Connect && message.command() != QdbMessage::Refuse) {
+            qCWarning(connectionC) << "Connection got an unexpected message in WaitingForConnection state" << message;
             resetConnection(true);
             break;
         }
-        if (checkVersion(message))
-            m_state = ConnectionState::Connected;
-        else
-            m_state = ConnectionState::Disconnected;
+
+        if (message.command() == QdbMessage::Connect) {
+            if (checkVersion(message))
+                m_state = ConnectionState::Connected;
+            else
+                m_state = ConnectionState::Disconnected;
+        } else if (message.command() == QdbMessage::Refuse) {
+            handleRefuse(message.data());
+        }
         break;
     case ConnectionState::Connected:
         switch (message.command()) {
         case QdbMessage::Connect:
             qCWarning(connectionC) << "Connection received QdbMessage::Connect while already connected. Reconnecting.";
             resetConnection(true);
+            break;
+        case QdbMessage::Refuse:
+            handleRefuse(message.data());
             break;
         case QdbMessage::Write:
             handleWrite(message);
@@ -152,6 +171,9 @@ void Connection::handleMessage()
         case QdbMessage::Connect:
             qCWarning(connectionC) << "Connection received QdbMessage::Connect while already connected and waiting. Reconnecting.";
             resetConnection(true);
+            break;
+        case QdbMessage::Refuse:
+            handleRefuse(message.data());
             break;
         case QdbMessage::Write:
             handleWrite(message);
@@ -197,12 +219,12 @@ void Connection::processQueue()
     }
 
     if (m_state == ConnectionState::Waiting) {
-        qCDebug(connectionC) << "Connection::processQueue() skipping to wait for QdbMessage::Ok";
+        qCDebug(connectionC) << "Delaying sending outgoing message to wait for Ok from device";
         return;
     }
 
     if (m_state == ConnectionState::WaitingForConnection) {
-        qCDebug(connectionC) << "Connection::processQueue() skipping to wait for QdbMessage::Connect";
+        qCDebug(connectionC) << "Delaying sending outgoing message due to waiting for Connect or Refuse from device";
         return;
     }
 
@@ -210,6 +232,8 @@ void Connection::processQueue()
 
     Q_ASSERT_X(message.command() != QdbMessage::Invalid, "Connection::processQueue()",
                "Tried to send invalid message");
+    Q_ASSERT_X(message.command() != QdbMessage::Refuse, "Connection::processQueue()",
+               "Tried to send Refuse message from host");
 
     if (!m_transport->send(message)) {
         qCCritical(connectionC) << "Connection could not send" << message;
@@ -239,6 +263,8 @@ void Connection::processQueue()
     case QdbMessage::Ok:
         // 'Ok's are sent via acknowledge()
         //[[fallthrough]]
+    case QdbMessage::Refuse:
+        //[[fallthrough]]
     case QdbMessage::Invalid:
         Q_UNREACHABLE();
         break;
@@ -254,6 +280,8 @@ void Connection::resetConnection(bool reconnect)
 
     if (reconnect)
         connect();
+    else
+        emit disconnected();
 }
 
 void Connection::closeStream(StreamId id)
@@ -280,6 +308,32 @@ void Connection::finishCreateStream(StreamId hostId, StreamId deviceId)
     callback(m_streams[hostId].get());
 }
 
+void Connection::handleRefuse(const QByteArray &payload)
+{
+    QDataStream dataStream{payload};
+    uint32_t rawReason;
+    dataStream >> rawReason;
+
+    const auto reason = toRefuseReason(rawReason);
+    switch (reason) {
+    case RefuseReason::NotConnected:
+        qCWarning(connectionC) << "Received Refuse due to not being connected, reconnecting";
+        resetConnection(true);
+        break;
+    case RefuseReason::UnknownVersion:
+        uint32_t version;
+        dataStream >> version;
+        qCCritical(connectionC) << "Device does not recognize version" << qdbProtocolVersion
+                                << "and requested for unknown version" << version << ". Can not connect.";
+        resetConnection(false);
+        break;
+    case RefuseReason::Invalid:
+        qCCritical(connectionC) << "Received Refuse with an invalid reason. Disconnected.";
+        resetConnection(false);
+        break;
+    }
+}
+
 void Connection::handleWrite(const QdbMessage &message)
 {
     if (m_streams.find(message.hostStream()) == m_streams.end()) {
@@ -301,8 +355,8 @@ bool Connection::checkVersion(const QdbMessage &message)
     dataStream >> protocolVersion;
 
     if (protocolVersion != qdbProtocolVersion) {
-        qCCritical(connectionC) << "Device offered protocol version" << protocolVersion
-                                << ", but only version" << qdbProtocolVersion << "is supported";
+        qCCritical(connectionC) << "Device responded with protocol version" << protocolVersion
+                                << ", but version" << qdbProtocolVersion << "was requested";
         return false;
     }
     return true;
