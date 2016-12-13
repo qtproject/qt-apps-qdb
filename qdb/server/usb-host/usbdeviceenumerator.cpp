@@ -32,6 +32,14 @@
 
 Q_DECLARE_LOGGING_CATEGORY(usbC);
 
+UsbAddress getAddress(libusb_device *device)
+{
+    return UsbAddress{
+        libusb_get_bus_number(device),
+        libusb_get_device_address(device)
+    };
+}
+
 bool isQdbInterface(const libusb_interface &interface)
 {
     const libusb_interface_descriptor *descriptor = &interface.altsetting[0];
@@ -43,7 +51,10 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
     libusb_config_descriptor *config;
     const int ret = libusb_get_active_config_descriptor(device, &config);
     if (ret) {
-        qCCritical(usbC) << "Could not get config descriptor:" << libusb_error_name(ret);
+        const auto address = getAddress(device);
+        qCWarning(usbC) << "Could not get config descriptor for device at"
+                        << address.busNumber << ":" << address.deviceAddress
+                        << ":" << libusb_error_name(ret);
         return std::make_pair(false, UsbInterfaceInfo{});
     }
     ScopeGuard configGuard = [&]() {
@@ -65,14 +76,6 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
     const auto outAddress = interface->endpoint[outEndpointIndex].bEndpointAddress;
     const UsbInterfaceInfo info{interfaceNumber, inAddress, outAddress};
     return std::make_pair(true, info);
-}
-
-UsbAddress getAddress(libusb_device *device)
-{
-    return UsbAddress{
-        libusb_get_bus_number(device),
-        libusb_get_device_address(device)
-    };
 }
 
 QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
@@ -117,7 +120,10 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
     libusb_device_handle *handle;
     int ret = libusb_open(device, &handle);
     if (ret) {
-        qCWarning(usbC) << "Could not open USB device for checking serial number:" << libusb_error_name(ret);
+        const auto address = getAddress(device);
+        qCWarning(usbC) << "Could not open USB device at" << address.busNumber
+                        << ":" << address.deviceAddress << "for checking serial number:"
+                        << libusb_error_name(ret);
         return std::make_pair(false, UsbDevice{});
     }
     ScopeGuard deviceGuard = [=]() {
