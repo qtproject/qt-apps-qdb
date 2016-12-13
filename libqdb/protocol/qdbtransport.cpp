@@ -20,7 +20,7 @@
 ******************************************************************************/
 #include "qdbtransport.h"
 
-#include "protocol/protocol.h"
+#include "libqdb/protocol/protocol.h"
 
 #include <QtCore/qdatastream.h>
 #include <QtCore/qdebug.h>
