@@ -6,13 +6,7 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-unix {
-    CONFIG += link_pkgconfig
-    PKGCONFIG += libusb-1.0
-}
-win32 {
-    LIBS += -llibusb-1.0
-}
+include($$PWD/../libusb_setup.pri)
 
 HEADERS += \
     ../qdb/server/connection.h \
@@ -38,7 +32,7 @@ SOURCES += \
 INCLUDEPATH += $$PWD/../
 
 unix {
-    LIBS = -L$$OUT_PWD/../libqdb -lqdb
+    LIBS += -L$$OUT_PWD/../libqdb -lqdb
     QMAKE_RPATHDIR += ../libqdb
 }
 
@@ -63,5 +57,5 @@ win32 {
     } else {
         LIBQDBDIR = $$OUT_PWD/../libqdb/release
     }
-    LIBS = -L$$LIBQDBDIR -lqdb
+    LIBS += -L$$LIBQDBDIR -lqdb
 }

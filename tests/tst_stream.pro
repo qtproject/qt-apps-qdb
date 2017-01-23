@@ -15,7 +15,7 @@ SOURCES += \
 INCLUDEPATH += $$PWD/../
 
 unix {
-    LIBS = -L$$OUT_PWD/../libqdb -lqdb
+    LIBS += -L$$OUT_PWD/../libqdb -lqdb
     QMAKE_RPATHDIR += ../libqdb
 }
 
@@ -40,6 +40,6 @@ win32 {
         LIBQDBDIR = $$OUT_PWD/../libqdb/release
     }
 
-    LIBS = -L$$LIBQDBDIR -lqdb
+    LIBS += -L$$LIBQDBDIR -lqdb
 }
 

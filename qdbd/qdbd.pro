@@ -36,7 +36,7 @@ HEADERS += \
 
 INCLUDEPATH += $$PWD/../
 
-LIBS = -L$$OUT_PWD/../libqdb -lqdb
+LIBS += -L$$OUT_PWD/../libqdb -lqdb
 QMAKE_RPATHDIR += ../libqdb
 
 unix {
