@@ -10,6 +10,9 @@ sub_tests.depends += libqdb
     SUBDIRS += qdb
 
     qdb.depends += libqdb
+    # Tests share files with qdb and parallel compilation in that case may lead to error C1083
+    # with MSVC. Avoid that by building tests after the main project.
+    sub_tests.depends += qdb
 }
 
 unix {
