@@ -30,7 +30,6 @@ QT_END_NAMESPACE
 
 #include <memory>
 
-
 class QdbTransport : public QObject
 {
     Q_OBJECT

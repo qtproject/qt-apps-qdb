@@ -2,8 +2,7 @@ QT -= gui
 
 TARGET = qdb
 TEMPLATE = lib
-
-DEFINES += LIBQDB_LIBRARY
+CONFIG += staticlib
 
 SOURCES += \
     abstractconnection.cpp \
@@ -16,7 +15,6 @@ SOURCES += \
 HEADERS += \
     abstractconnection.h \
     interruptsignalhandler.h \
-    libqdb_global.h \
     protocol/protocol.h \
     protocol/qdbmessage.h \
     protocol/qdbtransport.h \

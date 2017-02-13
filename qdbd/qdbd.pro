@@ -37,7 +37,6 @@ HEADERS += \
 INCLUDEPATH += $$PWD/../
 
 LIBS += -L$$OUT_PWD/../libqdb -lqdb
-QMAKE_RPATHDIR += ../libqdb
 
 unix {
     target.path = $$[QT_INSTALL_BINS]

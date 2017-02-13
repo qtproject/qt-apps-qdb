@@ -17,3 +17,5 @@ HEADERS += \
 SOURCES += \
     tst_qdbmessage.cpp \
     ../libqdb/protocol/qdbmessage.cpp
+
+INCLUDEPATH += $$PWD/..

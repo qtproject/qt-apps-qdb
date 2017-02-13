@@ -55,33 +55,15 @@ INCLUDEPATH += $$PWD/../
 
 unix {
     LIBS += -L$$OUT_PWD/../libqdb -lqdb
-    QMAKE_RPATHDIR += ../libqdb
     target.path = $$[QT_INSTALL_BINS]
     INSTALLS += target
 }
 
 win32 {
     CONFIG(debug, debug|release) {
-        LIBQDBDIR = $$OUT_PWD/../libqdb/debug
+        LIBS += -L$$OUT_PWD/../libqdb/debug
     } else {
-        LIBQDBDIR = $$OUT_PWD/../libqdb/release
+        LIBS += -L$$OUT_PWD/../libqdb/release
     }
-
-    LIBS += -L$$LIBQDBDIR -lqdb
-
-    SOURCES += \
-        $$PWD/../libqdb/protocol/qdbmessage.cpp \
-        $$PWD/../libqdb/protocol/qdbtransport.cpp \
-        $$PWD/../libqdb/stream.cpp \
-        $$PWD/../libqdb/streampacket.cpp \
-        $$PWD/../libqdb/abstractconnection.cpp \
-        $$PWD/../libqdb/interruptsignalhandler.cpp
-
-    HEADERS += \
-        $$PWD/../libqdb/protocol/qdbmessage.h \
-        $$PWD/../libqdb/protocol/qdbtransport.h \
-        $$PWD/../libqdb/stream.h \
-        $$PWD/../libqdb/streampacket.h \
-        $$PWD/../libqdb/abstractconnection.h \
-        $$PWD/../libqdb/interruptsignalhandler.h
+    LIBS += -lqdb
 }

@@ -27,22 +27,13 @@ INCLUDEPATH += $$PWD/../
 
 unix {
     LIBS += -L$$OUT_PWD/../libqdb -lqdb
-    QMAKE_RPATHDIR += ../libqdb
 }
 
 win32 {
-    HEADERS += \
-        ../libqdb/protocol/qdbmessage.h \
-        ../libqdb/protocol/qdbtransport.h
-
-    SOURCES += \
-        ../libqdb/protocol/qdbmessage.cpp \
-        ../libqdb/protocol/qdbtransport.cpp
-
     CONFIG(debug, debug|release) {
-        LIBQDBDIR = $$OUT_PWD/../libqdb/debug
+        LIBS += -L$$OUT_PWD/../libqdb/debug
     } else {
-        LIBQDBDIR = $$OUT_PWD/../libqdb/release
+        LIBS += -L$$OUT_PWD/../libqdb/release
     }
-    LIBS += -L$$LIBQDBDIR -lqdb
+    LIBS += -lqdb
 }
