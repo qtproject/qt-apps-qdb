@@ -41,7 +41,7 @@ class DeviceInformationFetcher : public QObject
 {
     Q_OBJECT
 public:
-    explicit DeviceInformationFetcher(UsbDevice device);
+    explicit DeviceInformationFetcher(std::shared_ptr<Connection> connection, UsbDevice device);
 
 signals:
     void fetched(DeviceInformation deviceInfo);
@@ -53,9 +53,8 @@ private slots:
     void handshakeResponse(QString serial, QString hostMac, QString ipAddress);
 
 private:
-    Connection *m_connection; // owned by this class, deletion set up in constructor
+    std::shared_ptr<Connection> m_connection;
     UsbAddress m_deviceAddress;
-    bool m_connected;
 };
 
 #endif // DEVICEINFORMATIONFETCHER_H

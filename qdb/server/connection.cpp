@@ -50,6 +50,11 @@ Connection::Connection(QdbTransport *transport, QObject *parent)
 
 }
 
+Connection::~Connection()
+{
+    close();
+}
+
 void Connection::connect()
 {
     Q_ASSERT(m_state == ConnectionState::Disconnected);
@@ -83,6 +88,8 @@ void Connection::close()
         enqueueMessage(QdbMessage{QdbMessage::Close, stream->hostId(), stream->deviceId()});
         // Processing of the Close message erased the stream from m_streams
     }
+
+    m_state = ConnectionState::Disconnected;
 }
 
 ConnectionState Connection::state() const
@@ -96,8 +103,6 @@ void Connection::createStream(const QByteArray &openTag, StreamCreatedCallback s
     m_streamRequests[id] = streamCreatedCallback;
     enqueueMessage(QdbMessage{QdbMessage::Open, id, 0, openTag});
 }
-
-Connection::~Connection() = default;
 
 void Connection::enqueueMessage(const QdbMessage &message)
 {

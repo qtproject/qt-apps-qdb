@@ -43,33 +43,23 @@ bool operator!=(const DeviceInformation &lhs, const DeviceInformation &rhs)
     return !(lhs == rhs);
 }
 
-DeviceInformationFetcher::DeviceInformationFetcher(UsbDevice device)
-    : m_connection{new Connection{new QdbTransport{new UsbConnection{device}}}},
-      m_deviceAddress(device.address), // uniform initialization with {} fails with GCC 4.9
-      m_connected{false}
+DeviceInformationFetcher::DeviceInformationFetcher(std::shared_ptr<Connection> connection,
+                                                   UsbDevice device)
+    : m_connection{connection},
+      m_deviceAddress(device.address) // uniform initialization with {} fails with GCC 4.9
 {
-    connect(this, &DeviceInformationFetcher::fetched, m_connection, &Connection::close);
-    connect(this, &DeviceInformationFetcher::fetched, m_connection, &QObject::deleteLater);
 
-    if (!m_connection->initialize()) {
-        qCCritical(deviceInfoC) << "Could not initialize connection to" << device.serial << "for fetching device information";
-        return;
-    }
-
-    m_connection->connect();
-    m_connected = true;
-    qCDebug(deviceInfoC) << "Initialized connection to" << device.serial;
 }
 
 void DeviceInformationFetcher::fetch()
 {
-    if (!m_connected) {
+    if (!m_connection || m_connection->state() == ConnectionState::Disconnected) {
         qCWarning(deviceInfoC) << "Not fetching device information due to no connection";
         emit fetched(DeviceInformation{"", "", "", m_deviceAddress});
         return;
     }
 
-    auto *service = new HandshakeService{m_connection};
+    auto *service = new HandshakeService{m_connection.get()};
 
     connect(this, &DeviceInformationFetcher::fetched,
             service, &QObject::deleteLater);

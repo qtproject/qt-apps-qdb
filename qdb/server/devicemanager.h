@@ -21,6 +21,7 @@
 #ifndef DEVICEMANAGER_H
 #define DEVICEMANAGER_H
 
+#include "connectionpool.h"
 #include "deviceinformationfetcher.h"
 #include "usb-host/usbdeviceenumerator.h"
 
@@ -55,6 +56,7 @@ private:
     UsbDevice m_fetchingDevice;
     bool m_fetching;
     std::vector<DeviceInformation> m_deviceInfos;
+    ConnectionPool m_pool;
 };
 
 #endif // DEVICEMANAGER_H

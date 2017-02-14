@@ -16,6 +16,7 @@ HEADERS += \
     client/client.h \
     hostmessages.h \
     server/connection.h \
+    server/connectionpool.h \
     server/deviceinformationfetcher.h \
     server/devicemanager.h \
     server/echoservice.h \
@@ -36,6 +37,7 @@ SOURCES += \
     hostmessages.cpp \
     main.cpp \
     server/connection.cpp \
+    server/connectionpool.cpp \
     server/deviceinformationfetcher.cpp \
     server/devicemanager.cpp \
     server/echoservice.cpp \

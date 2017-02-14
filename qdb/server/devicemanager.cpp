@@ -135,7 +135,7 @@ void DeviceManager::fetchDeviceInformation(UsbDevice device)
     Q_ASSERT(!m_fetching);
     m_fetching = true;
     m_fetchingDevice = device;
-    auto *fetcher = new DeviceInformationFetcher{device};
+    auto *fetcher = new DeviceInformationFetcher{m_pool.connect(device), device};
     connect(fetcher, &DeviceInformationFetcher::fetched, fetcher, &QObject::deleteLater);
     connect(fetcher, &DeviceInformationFetcher::fetched, this, &DeviceManager::handleDeviceInformation);
 
