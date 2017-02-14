@@ -26,25 +26,21 @@
 
 #include <QtCore/qobject.h>
 
-struct DeviceInformation
-{
-    QString serial;
-    QString hostMac;
-    QString ipAddress;
-    UsbAddress usbAddress;
-};
-
-bool operator==(const DeviceInformation &lhs, const DeviceInformation &rhs);
-bool operator!=(const DeviceInformation &lhs, const DeviceInformation &rhs);
-
 class DeviceInformationFetcher : public QObject
 {
     Q_OBJECT
 public:
-    explicit DeviceInformationFetcher(std::shared_ptr<Connection> connection, UsbDevice device);
+    struct Info
+    {
+        QString serial;
+        QString hostMac;
+        QString ipAddress;
+    };
+
+    DeviceInformationFetcher(std::shared_ptr<Connection> connection, UsbDevice device);
 
 signals:
-    void fetched(DeviceInformation deviceInfo);
+    void fetched(UsbDevice device, Info deviceInfo);
 
 public slots:
     void fetch();
@@ -54,7 +50,7 @@ private slots:
 
 private:
     std::shared_ptr<Connection> m_connection;
-    UsbAddress m_deviceAddress;
+    UsbDevice m_device;
 };
 
 #endif // DEVICEINFORMATIONFETCHER_H

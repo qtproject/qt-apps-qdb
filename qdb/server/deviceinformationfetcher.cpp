@@ -30,23 +30,10 @@
 
 Q_LOGGING_CATEGORY(deviceInfoC, "qdb.devices.info");
 
-bool operator==(const DeviceInformation &lhs, const DeviceInformation &rhs)
-{
-    return lhs.serial == rhs.serial
-        && lhs.hostMac == rhs.hostMac
-        && lhs.ipAddress == rhs.ipAddress
-        && lhs.usbAddress == rhs.usbAddress;
-}
-
-bool operator!=(const DeviceInformation &lhs, const DeviceInformation &rhs)
-{
-    return !(lhs == rhs);
-}
-
 DeviceInformationFetcher::DeviceInformationFetcher(std::shared_ptr<Connection> connection,
                                                    UsbDevice device)
     : m_connection{connection},
-      m_deviceAddress(device.address) // uniform initialization with {} fails with GCC 4.9
+      m_device(device) // uniform initialization with {} fails in MSVC 2013 with error C2797
 {
 
 }
@@ -55,7 +42,7 @@ void DeviceInformationFetcher::fetch()
 {
     if (!m_connection || m_connection->state() == ConnectionState::Disconnected) {
         qCWarning(deviceInfoC) << "Not fetching device information due to no connection";
-        emit fetched(DeviceInformation{"", "", "", m_deviceAddress});
+        emit fetched(m_device, Info{"", "", ""});
         return;
     }
 
@@ -78,5 +65,5 @@ void DeviceInformationFetcher::handshakeResponse(QString serial, QString hostMac
     qCDebug(deviceInfoC) << "    Device serial:" << serial;
     qCDebug(deviceInfoC) << "    Host-side MAC address:" << hostMac;
     qCDebug(deviceInfoC) << "    Device IP address:" << ipAddress;
-    emit fetched(DeviceInformation{serial, hostMac, ipAddress, m_deviceAddress});
+    emit fetched(m_device, Info{serial, hostMac, ipAddress});
 }

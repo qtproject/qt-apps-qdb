@@ -28,6 +28,14 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qqueue.h>
 
+struct DeviceInformation
+{
+    QString serial;
+    QString hostMac;
+    QString ipAddress;
+    UsbAddress usbAddress;
+};
+
 class DeviceManager : public QObject
 {
     Q_OBJECT
@@ -42,7 +50,7 @@ signals:
     void disconnectedDevice(QString serial);
 
 private slots:
-    void handleDeviceInformation(DeviceInformation deviceInfo);
+    void handleDeviceInformation(UsbDevice device, DeviceInformationFetcher::Info info);
     void handlePluggedInDevice(UsbDevice device);
     void handleUnpluggedDevice(UsbAddress address);
 
@@ -51,10 +59,7 @@ private:
     void fetchIncomplete();
 
     UsbDeviceEnumerator m_deviceEnumerator;
-    QQueue<UsbDevice> m_newDevices;
     QQueue<UsbDevice> m_incompleteDevices;
-    UsbDevice m_fetchingDevice;
-    bool m_fetching;
     std::vector<DeviceInformation> m_deviceInfos;
     ConnectionPool m_pool;
 };
