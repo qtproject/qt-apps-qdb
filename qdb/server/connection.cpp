@@ -116,7 +116,8 @@ void Connection::handleMessage()
 
     if (message.command() == QdbMessage::Invalid) {
         qCCritical(connectionC) << "Connection received invalid message!";
-        resetConnection(false);
+        if (m_state != ConnectionState::Disconnected)
+            resetConnection(false);
         return;
     }
 
@@ -276,6 +277,10 @@ void Connection::resetConnection(bool reconnect)
     m_outgoingMessages.clear();
     m_state = ConnectionState::Disconnected;
     m_streamRequests.clear();
+    for (const auto &pair : m_streams) {
+        const auto &stream = pair.second;
+        stream->close();
+    }
     m_streams.clear();
 
     if (reconnect)
