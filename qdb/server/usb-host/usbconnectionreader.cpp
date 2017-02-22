@@ -54,7 +54,7 @@ void UsbConnectionReader::executeRead()
             ++m_errorCount;
             if (m_errorCount == 5) {
                 emit newRead(QByteArray{});
-                m_errorCount = 0;
+                return; // Quit reading, this connection has failed.
             }
         }
     } else {
