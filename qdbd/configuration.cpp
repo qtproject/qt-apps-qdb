@@ -32,6 +32,11 @@ QString Configuration::gadgetConfigFsDir()
     return s_gadgetConfigFsDir;
 }
 
+QString Configuration::networkScript()
+{
+    return s_networkScript;
+}
+
 QString Configuration::rndisFunctionName()
 {
     return s_rndisFunctionName;
@@ -47,6 +52,11 @@ void Configuration::setGadgetConfigFsDir(const QString &path)
     s_gadgetConfigFsDir = QDir::cleanPath(path);
 }
 
+void Configuration::setNetworkScript(const QString &script)
+{
+    s_networkScript = script;
+}
+
 void Configuration::setRndisFunctionName(const QString &name)
 {
     s_rndisFunctionName = name;
@@ -55,3 +65,4 @@ void Configuration::setRndisFunctionName(const QString &name)
 QString Configuration::s_functionFsDir = "/dev/usb-ffs/qdb";
 QString Configuration::s_gadgetConfigFsDir = "/sys/kernel/config/usb_gadget/g1";
 QString Configuration::s_rndisFunctionName = "rndis.usb0";
+QString Configuration::s_networkScript = "b2qt-gadget-network.sh";

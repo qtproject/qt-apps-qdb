@@ -24,8 +24,10 @@ HEADERS += \
     server/hostserver.h \
     server/hostservlet.h \
     server/logging.h \
-    server/networkmanagercontrol.h \
+    server/networkconfigurationservice.h \
+    server/networkconfigurator.h \
     server/service.h \
+    server/subnet.h \
     server/usb-host/usbcommon.h \
     server/usb-host/usbconnection.h \
     server/usb-host/usbconnectionreader.h \
@@ -45,8 +47,10 @@ SOURCES += \
     server/hostserver.cpp \
     server/hostservlet.cpp \
     server/logging.cpp \
-    server/networkmanagercontrol.cpp \
+    server/networkconfigurationservice.cpp \
+    server/networkconfigurator.cpp \
     server/service.cpp \
+    server/subnet.cpp \
     server/usb-host/libusbcontext.cpp \
     server/usb-host/usbconnection.cpp \
     server/usb-host/usbconnectionreader.cpp \

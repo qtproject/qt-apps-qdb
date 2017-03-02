@@ -18,6 +18,7 @@ SOURCES += \
     executor.cpp \
     handshakeexecutor.cpp \
     main.cpp \
+    networkconfigurationexecutor.cpp \
     server.cpp \
     usb-gadget/usbgadget.cpp \
     usb-gadget/usbgadgetreader.cpp \
@@ -29,6 +30,7 @@ HEADERS += \
     echoexecutor.h \
     executor.h \
     handshakeexecutor.h \
+    networkconfigurationexecutor.h \
     server.h \
     usb-gadget/usbgadget.h \
     usb-gadget/usbgadgetreader.h \

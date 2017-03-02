@@ -1,6 +1,6 @@
 /******************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2017 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the Qt Debug Bridge.
@@ -18,28 +18,35 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef CONFIGURATION_H
-#define CONFIGURATION_H
+#ifndef NETWORKCONFIGURATOR_H
+#define NETWORKCONFIGURATOR_H
 
-#include <QtCore/qstring.h>
+#include "usb-host/usbdevice.h"
+class Connection;
+class ConnectionPool;
 
-class Configuration
+#include <QtCore/qobject.h>
+
+#include <memory>
+#include <vector>
+
+class NetworkConfigurator : public QObject
 {
+    Q_OBJECT
 public:
-    static QString functionFsDir();
-    static QString gadgetConfigFsDir();
-    static QString networkScript();
-    static QString rndisFunctionName();
-    static void setFunctionFsDir(const QString &path);
-    static void setGadgetConfigFsDir(const QString &path);
-    static void setNetworkScript(const QString &script);
-    static void setRndisFunctionName(const QString &name);
+    NetworkConfigurator(ConnectionPool *pool, UsbDevice device);
+
+    void configure();
+
+signals:
+    void configured(UsbDevice device, bool success);
+
+private slots:
+    void handleResponse(bool success);
 
 private:
-    static QString s_functionFsDir;
-    static QString s_gadgetConfigFsDir;
-    static QString s_networkScript;
-    static QString s_rndisFunctionName;
+    std::shared_ptr<Connection> m_connection;
+    UsbDevice m_device;
 };
 
-#endif // CONFIGURATION_H
+#endif // NETWORKCONFIGURATOR_H

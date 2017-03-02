@@ -30,6 +30,7 @@ enum ServiceTag : uint32_t
 {
     EchoTag = 1,
     HandshakeTag,
+    NetworkConfigurationTag,
 };
 
 inline

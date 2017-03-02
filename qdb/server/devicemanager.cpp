@@ -20,7 +20,7 @@
 ******************************************************************************/
 #include "devicemanager.h"
 
-#include "networkmanagercontrol.h"
+#include "networkconfigurator.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qloggingcategory.h>
@@ -49,15 +49,19 @@ void DeviceManager::start()
     m_deviceEnumerator.startMonitoring();
 }
 
+void DeviceManager::handleDeviceConfigured(UsbDevice device, bool success)
+{
+    qCDebug(devicesC) << "Configured device" << device.serial
+                      << (success ? "successfully" : "unsuccessfully");
+    fetchDeviceInformation(device);
+}
+
 void DeviceManager::handleDeviceInformation(UsbDevice device, DeviceInformationFetcher::Info info)
 {
     if (info.hostMac.isEmpty()) {
         qCWarning(devicesC) << "Could not fetch device information from" << device.serial;
         return; // Discard the device
     }
-
-    qCDebug(devicesC) << "Configuring network for" << info.serial;
-    configureUsbNetwork(info.serial, info.hostMac);
 
     if (info.ipAddress.isEmpty()) {
         qCDebug(devicesC) << "Incomplete information received for" << info.serial;
@@ -88,7 +92,7 @@ void DeviceManager::handleDeviceInformation(UsbDevice device, DeviceInformationF
 void DeviceManager::handlePluggedInDevice(UsbDevice device)
 {
     qCDebug(devicesC) << "Device" << device.serial << "plugged in at" << device.address.busNumber << ":" << device.address.deviceAddress;
-    fetchDeviceInformation(device);
+    configureDevice(device);
 }
 
 void DeviceManager::handleUnpluggedDevice(UsbAddress address)
@@ -114,6 +118,17 @@ void DeviceManager::handleUnpluggedDevice(UsbAddress address)
         emit disconnectedDevice(infoIter->serial);
         m_deviceInfos.erase(infoIter);
     }
+}
+
+void DeviceManager::configureDevice(UsbDevice device)
+{
+    qCDebug(devicesC) << "Configuring device" << device.serial;
+    auto *configurator = new NetworkConfigurator{&m_pool, device};
+    connect(configurator, &NetworkConfigurator::configured, configurator, &QObject::deleteLater);
+    connect(configurator, &NetworkConfigurator::configured,
+            this, &DeviceManager::handleDeviceConfigured);
+
+    configurator->configure();
 }
 
 void DeviceManager::fetchDeviceInformation(UsbDevice device)

@@ -22,6 +22,7 @@
 
 #include "echoexecutor.h"
 #include "handshakeexecutor.h"
+#include "networkconfigurationexecutor.h"
 #include "libqdb/make_unique.h"
 #include "libqdb/protocol/services.h"
 
@@ -39,6 +40,8 @@ std::unique_ptr<Executor> createExecutor(Stream *stream, const QByteArray &tagBu
         return make_unique<EchoExecutor>(stream);
     case HandshakeTag:
         return make_unique<HandshakeExecutor>(stream);
+    case NetworkConfigurationTag:
+        return make_unique<NetworkConfigurationExecutor>(stream);
     default:
         qCritical("Unknown ServiceTag %d in createExecutor", tag);
         return std::unique_ptr<Executor>{};

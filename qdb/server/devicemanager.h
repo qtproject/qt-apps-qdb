@@ -50,11 +50,13 @@ signals:
     void disconnectedDevice(QString serial);
 
 private slots:
+    void handleDeviceConfigured(UsbDevice device, bool success);
     void handleDeviceInformation(UsbDevice device, DeviceInformationFetcher::Info info);
     void handlePluggedInDevice(UsbDevice device);
     void handleUnpluggedDevice(UsbAddress address);
 
 private:
+    void configureDevice(UsbDevice device);
     void fetchDeviceInformation(UsbDevice device);
     void fetchIncomplete();
 

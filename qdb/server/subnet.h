@@ -1,6 +1,6 @@
 /******************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2017 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the Qt Debug Bridge.
@@ -18,28 +18,20 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef CONFIGURATION_H
-#define CONFIGURATION_H
+#ifndef SUBNET_H
+#define SUBNET_H
 
-#include <QtCore/qstring.h>
+#include <QtNetwork/qhostaddress.h>
 
-class Configuration
+struct Subnet
 {
-public:
-    static QString functionFsDir();
-    static QString gadgetConfigFsDir();
-    static QString networkScript();
-    static QString rndisFunctionName();
-    static void setFunctionFsDir(const QString &path);
-    static void setGadgetConfigFsDir(const QString &path);
-    static void setNetworkScript(const QString &script);
-    static void setRndisFunctionName(const QString &name);
-
-private:
-    static QString s_functionFsDir;
-    static QString s_gadgetConfigFsDir;
-    static QString s_networkScript;
-    static QString s_rndisFunctionName;
+    QHostAddress address;
+    int prefixLength;
 };
+Q_DECLARE_METATYPE(Subnet)
 
-#endif // CONFIGURATION_H
+std::pair<Subnet, bool> findUnusedSubnet();
+std::pair<Subnet, bool> findUnusedSubnet(const std::vector<Subnet> &candidateSubnets,
+                                         const std::vector<Subnet> &usedSubnets);
+
+#endif // SUBNET_H

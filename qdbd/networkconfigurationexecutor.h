@@ -1,6 +1,6 @@
 /******************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2017 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the Qt Debug Bridge.
@@ -18,28 +18,25 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef CONFIGURATION_H
-#define CONFIGURATION_H
+#ifndef NETWORKCONFIGURATIONEXECUTOR_H
+#define NETWORKCONFIGURATIONEXECUTOR_H
 
-#include <QtCore/qstring.h>
+#include "executor.h"
+class Stream;
 
-class Configuration
+class NetworkConfigurationExecutor : public Executor
 {
+    Q_OBJECT
 public:
-    static QString functionFsDir();
-    static QString gadgetConfigFsDir();
-    static QString networkScript();
-    static QString rndisFunctionName();
-    static void setFunctionFsDir(const QString &path);
-    static void setGadgetConfigFsDir(const QString &path);
-    static void setNetworkScript(const QString &script);
-    static void setRndisFunctionName(const QString &name);
+    explicit NetworkConfigurationExecutor(Stream *stream);
+
+public slots:
+    void receive(StreamPacket packet) override;
 
 private:
-    static QString s_functionFsDir;
-    static QString s_gadgetConfigFsDir;
-    static QString s_networkScript;
-    static QString s_rndisFunctionName;
+    void failedResponse();
+
+    Stream *m_stream;
 };
 
-#endif // CONFIGURATION_H
+#endif // NETWORKCONFIGURATIONEXECUTOR_H
