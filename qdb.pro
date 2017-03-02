@@ -1,5 +1,5 @@
 load(configure)
-!daemon_only:!qtCompileTest(libusb10): error("Could not find libusb-1.0, which is mandatory for host parts of QDB")
+!daemon_only:!qtCompileTest(libusb10): warning("Could not find libusb-1.0, which is mandatory for host parts of QDB")
 
 load(qt_parts)
 
@@ -8,7 +8,7 @@ CONFIG -= qt_example_installs
 SUBDIRS += libqdb
 sub_tests.depends += libqdb
 
-!daemon_only {
+!daemon_only:config_libusb10 {
     SUBDIRS += qdb
 
     qdb.depends += libqdb
