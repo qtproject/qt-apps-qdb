@@ -36,9 +36,7 @@ public:
 
     void initialize() override;
 
-    bool hasStream() const;
     void ask();
-    void close();
 
 signals:
     void response(QString serial, QString macAddress, QString ipAddress);

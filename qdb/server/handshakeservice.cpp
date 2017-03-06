@@ -50,11 +50,6 @@ void HandshakeService::initialize()
     });
 }
 
-bool HandshakeService::hasStream() const
-{
-    return m_stream != nullptr;
-}
-
 void HandshakeService::ask()
 {
     if (!m_stream) {
@@ -64,12 +59,6 @@ void HandshakeService::ask()
     StreamPacket packet{};
     packet << 0;
     m_stream->write(packet);
-}
-
-void HandshakeService::close()
-{
-    if (m_stream)
-        m_stream->requestClose();
 }
 
 void HandshakeService::receive(StreamPacket packet)
