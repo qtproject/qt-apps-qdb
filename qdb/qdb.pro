@@ -53,10 +53,11 @@ SOURCES += \
 
 INCLUDEPATH += $$PWD/../
 
+target.path = $$[QT_INSTALL_BINS]
+INSTALLS += target
+
 unix {
     LIBS += -L$$OUT_PWD/../libqdb -lqdb
-    target.path = $$[QT_INSTALL_BINS]
-    INSTALLS += target
 }
 
 win32 {

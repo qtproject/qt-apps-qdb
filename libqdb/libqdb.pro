@@ -22,9 +22,7 @@ HEADERS += \
     stream.h \
     streampacket.h \
 
-unix {
-    target.path = $$[QT_INSTALL_LIBS]
-    INSTALLS += target
-}
+target.path = $$[QT_INSTALL_LIBS]
+INSTALLS += target
 
 INCLUDEPATH += $$PWD/..

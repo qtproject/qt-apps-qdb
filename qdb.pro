@@ -3,6 +3,8 @@ load(configure)
 
 load(qt_parts)
 
+CONFIG -= qt_example_installs
+
 SUBDIRS += libqdb
 sub_tests.depends += libqdb
 
