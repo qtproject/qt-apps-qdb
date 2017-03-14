@@ -21,6 +21,7 @@
 #ifndef USBGADGET_H
 #define USBGADGET_H
 
+class UsbGadgetControl;
 class UsbGadgetReader;
 class UsbGadgetWriter;
 
@@ -56,6 +57,7 @@ private slots:
 
 private:
     bool openControlEndpoint();
+    void startControlThread();
     void startReadThread();
     void startWriteThread();
 
@@ -64,8 +66,10 @@ private:
     // gadget and in means from gadget to host.
     QFile m_outEndpoint;
     QFile m_inEndpoint;
+    std::unique_ptr<QThread> m_controlThread;
     std::unique_ptr<QThread> m_readThread;
     std::unique_ptr<QThread> m_writeThread;
+    std::unique_ptr<UsbGadgetControl> m_control;
     std::unique_ptr<UsbGadgetReader> m_reader;
     std::unique_ptr<UsbGadgetWriter> m_writer;
     QQueue<QByteArray> m_reads;

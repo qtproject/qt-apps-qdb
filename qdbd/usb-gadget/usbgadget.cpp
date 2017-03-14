@@ -23,6 +23,7 @@
 #include "configuration.h"
 #include "libqdb/make_unique.h"
 #include "libqdb/qdbconstants.h"
+#include "usb-gadget/usbgadgetcontrol.h"
 #include "usb-gadget/usbgadgetreader.h"
 #include "usb-gadget/usbgadgetwriter.h"
 
@@ -113,8 +114,10 @@ UsbGadget::UsbGadget()
     : m_controlEndpoint(Configuration::functionFsDir() + "/ep0"),
       m_outEndpoint(Configuration::functionFsDir() + "/ep1"),
       m_inEndpoint(Configuration::functionFsDir() + "/ep2"),
+      m_controlThread{nullptr},
       m_readThread{nullptr},
       m_writeThread{nullptr},
+      m_control{nullptr},
       m_reader{nullptr},
       m_writer{nullptr},
       m_reads{}
@@ -124,6 +127,10 @@ UsbGadget::UsbGadget()
 
 UsbGadget::~UsbGadget()
 {
+    if (m_controlThread) {
+        m_controlThread->terminate();
+        m_controlThread->wait();
+    }
     if (m_readThread) {
         m_readThread->terminate();
         m_readThread->wait();
@@ -168,6 +175,7 @@ bool UsbGadget::open(QIODevice::OpenMode mode)
     }
     qCDebug(usbC) << "Initialized function fs";
 
+    startControlThread();
     startReadThread();
     startWriteThread();
 
@@ -202,6 +210,19 @@ void UsbGadget::dataRead(QByteArray data)
 {
     m_reads.enqueue(data);
     emit readyRead();
+}
+
+void UsbGadget::startControlThread()
+{
+    m_control = make_unique<UsbGadgetControl>(&m_controlEndpoint);
+    m_controlThread = make_unique<QThread>();
+
+    connect(m_controlThread.get(), &QThread::started,
+            m_control.get(), &UsbGadgetControl::monitor);
+
+    m_control->moveToThread(m_controlThread.get());
+    m_controlThread->setObjectName("UsbGadgetControl");
+    m_controlThread->start();
 }
 
 void UsbGadget::startReadThread()

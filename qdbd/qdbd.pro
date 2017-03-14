@@ -21,6 +21,7 @@ SOURCES += \
     networkconfigurationexecutor.cpp \
     server.cpp \
     usb-gadget/usbgadget.cpp \
+    usb-gadget/usbgadgetcontrol.cpp \
     usb-gadget/usbgadgetreader.cpp \
     usb-gadget/usbgadgetwriter.cpp \
 
@@ -33,6 +34,7 @@ HEADERS += \
     networkconfigurationexecutor.h \
     server.h \
     usb-gadget/usbgadget.h \
+    usb-gadget/usbgadgetcontrol.h \
     usb-gadget/usbgadgetreader.h \
     usb-gadget/usbgadgetwriter.h \
 
