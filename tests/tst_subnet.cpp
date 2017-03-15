@@ -25,12 +25,6 @@
 
 using Subnets = std::vector<Subnet>;
 
-bool operator==(const Subnet &lhs, const Subnet &rhs)
-{
-    return lhs.address == rhs.address
-            && lhs.prefixLength == rhs.prefixLength;
-}
-
 class tst_Subnet : public QObject
 {
     Q_OBJECT
@@ -40,6 +34,9 @@ private slots:
     void freeSubnets_data();
     void usedSubnets();
     void usedSubnets_data();
+    void reserveOne();
+    void reserveOne_data();
+    void reserveSome();
 };
 
 void tst_Subnet::freeSubnets()
@@ -93,6 +90,66 @@ void tst_Subnet::usedSubnets_data()
                {QHostAddress{"172.16.45.1"}, 24},
                {QHostAddress{"10.9.0.1"}, 16}};
     QTest::newRow("3") << candidates << subnets;
+}
+
+void tst_Subnet::reserveOne()
+{
+    QFETCH(Subnet, subnet);
+
+    SubnetPool *pool = SubnetPool::instance();
+    const auto amountOfCandidates = pool->candidates().size();
+    QVERIFY(amountOfCandidates >= 1);
+    {
+        const auto reservation = pool->reserve(subnet);
+        const auto candidates = pool->candidates();
+        QCOMPARE(candidates.size(), amountOfCandidates - 1);
+        QVERIFY(std::none_of(candidates.begin(), candidates.end(),
+                             [&](const Subnet &other) {
+                                 return subnet == other;
+                             }));
+    }
+    const auto candidates = pool->candidates();
+    QCOMPARE(candidates.size(), amountOfCandidates);
+    QVERIFY(std::find(candidates.begin(), candidates.end(), subnet) != candidates.end());
+}
+
+void tst_Subnet::reserveOne_data()
+{
+    QTest::addColumn<Subnet>("subnet");
+    QTest::newRow("first") << Subnet{QHostAddress{"172.16.58.1"}, 30};
+    QTest::newRow("middle") << Subnet{QHostAddress{"172.25.58.1"}, 30};
+    QTest::newRow("last") << Subnet{QHostAddress{"10.17.20.1"}, 30};
+}
+
+void tst_Subnet::reserveSome()
+{
+    SubnetPool *pool = SubnetPool::instance();
+    const Subnets subnetsToReserve {{QHostAddress{"172.18.58.1"}, 30},
+                                    {QHostAddress{"172.19.58.1"}, 30},
+                                    {QHostAddress{"172.20.58.1"}, 30}};
+    const auto amountOfCandidates = pool->candidates().size();
+
+    std::vector<SubnetReservation> reservations;
+    for (const Subnet &subnet : subnetsToReserve)
+    {
+        reservations.push_back(pool->reserve(subnet));
+        const auto candidates = pool->candidates();
+        QCOMPARE(candidates.size(), amountOfCandidates - reservations.size());
+        QVERIFY(std::find(candidates.begin(), candidates.end(), subnet) == candidates.end());
+    }
+    const auto candidates = pool->candidates();
+    QCOMPARE(candidates.size(), amountOfCandidates - reservations.size());
+    QVERIFY(std::none_of(candidates.begin(), candidates.end(),
+                         [&](const Subnet &subnet) {
+                             return std::find(subnetsToReserve.begin(),
+                                              subnetsToReserve.end(),
+                                              subnet)
+                                     != subnetsToReserve.end();
+                         }));
+
+    reservations.clear();
+
+    QCOMPARE(pool->candidates().size(), amountOfCandidates);
 }
 
 QTEST_APPLESS_MAIN(tst_Subnet)

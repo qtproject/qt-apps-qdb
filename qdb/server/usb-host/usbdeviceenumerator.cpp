@@ -135,7 +135,8 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
     const auto address = getAddress(device);
     const auto serial = getSerialNumber(device, handle);
 
-    const UsbDevice usbDevice{serial, address, LibUsbDevice{device}, interfaceResult.second};
+    const UsbDevice usbDevice{serial, address, LibUsbDevice{device}, interfaceResult.second,
+                              SubnetReservation{}};
     return std::make_pair(true, usbDevice);
 }
 

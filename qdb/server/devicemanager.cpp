@@ -77,7 +77,8 @@ void DeviceManager::handleDeviceInformation(UsbDevice device, DeviceInformationF
                              });
     if (iter == m_deviceInfos.end()) {
         qCDebug(devicesC) << "Added new info for" << info.serial;
-        DeviceInformation newInfo{info.serial, info.hostMac, info.ipAddress, device.address};
+        DeviceInformation newInfo{info.serial, info.hostMac, info.ipAddress, device.address,
+                                  device.reservation};
         m_deviceInfos.push_back(newInfo);
         emit newDeviceInfo(newInfo);
     } else if (iter->hostMac != info.hostMac || iter->ipAddress != info.ipAddress) {

@@ -45,15 +45,16 @@ void NetworkConfigurator::configure()
         return;
     }
 
-    const std::pair<Subnet, bool> configuration = findUnusedSubnet();
-    if (!configuration.second) {
+    SubnetReservation reservation = findUnusedSubnet();
+    if (!reservation) {
         qCCritical(configuratorC) << "Could not find a free subnet to use for the network of device"
                                   << m_device.serial;
         emit configured(m_device, false);
         return;
     }
 
-    const auto &subnet = configuration.first;
+    m_device.reservation = reservation;
+    const auto subnet = reservation->subnet();
     const auto subnetString
             = QString{"%1/%2"}.arg(subnet.address.toString()).arg(subnet.prefixLength);
 

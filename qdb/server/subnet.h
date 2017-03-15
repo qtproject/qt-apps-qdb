@@ -21,7 +21,10 @@
 #ifndef SUBNET_H
 #define SUBNET_H
 
+#include <QtCore/qmutex.h>
 #include <QtNetwork/qhostaddress.h>
+
+#include <memory>
 
 struct Subnet
 {
@@ -30,7 +33,41 @@ struct Subnet
 };
 Q_DECLARE_METATYPE(Subnet)
 
-std::pair<Subnet, bool> findUnusedSubnet();
+bool operator==(const Subnet &lhs, const Subnet &rhs);
+
+class SubnetReservationImpl
+{
+public:
+    SubnetReservationImpl(const Subnet &subnet);
+    ~SubnetReservationImpl();
+
+    Subnet subnet() const;
+
+private:
+    Subnet m_subnet;
+};
+
+using SubnetReservation = std::shared_ptr<SubnetReservationImpl>;
+
+class SubnetPool
+{
+public:
+    static SubnetPool *instance();
+
+    std::vector<Subnet> candidates();
+    SubnetReservation reserve(const Subnet &subnet);
+    void free(const Subnet &subnet);
+
+private:
+    SubnetPool();
+    SubnetPool(const std::vector<Subnet> &subnet);
+
+    QMutex m_lock;
+    std::vector<Subnet> m_candidates;
+    std::vector<Subnet> m_reserved;
+};
+
+SubnetReservation findUnusedSubnet();
 std::pair<Subnet, bool> findUnusedSubnet(const std::vector<Subnet> &candidateSubnets,
                                          const std::vector<Subnet> &usedSubnets);
 

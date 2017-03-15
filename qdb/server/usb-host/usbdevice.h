@@ -21,6 +21,7 @@
 #ifndef USBDEVICE_H
 #define USBDEVICE_H
 
+#include "../subnet.h"
 #include "usbcommon.h"
 
 #include <QtCore/qstring.h>
@@ -63,6 +64,7 @@ struct UsbDevice
     UsbAddress address;
     LibUsbDevice usbDevice;
     UsbInterfaceInfo interfaceInfo;
+    SubnetReservation reservation;
 };
 
 #endif // USBDEVICE_H

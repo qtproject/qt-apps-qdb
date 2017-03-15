@@ -36,28 +36,16 @@ std::vector<Subnet> fetchUsedSubnets()
 
 } // anonymous namespace
 
-std::pair<Subnet, bool> findUnusedSubnet()
+SubnetReservation findUnusedSubnet()
 {
+    SubnetPool *pool = SubnetPool::instance();
     const std::vector<Subnet> usedSubnets = fetchUsedSubnets();
-    const std::vector<Subnet> candidateSubnets = {{QHostAddress{"172.16.58.1"}, 30},
-                                                  {QHostAddress{"172.17.58.1"}, 30},
-                                                  {QHostAddress{"172.18.58.1"}, 30},
-                                                  {QHostAddress{"172.19.58.1"}, 30},
-                                                  {QHostAddress{"172.20.58.1"}, 30},
-                                                  {QHostAddress{"172.21.58.1"}, 30},
-                                                  {QHostAddress{"172.22.58.1"}, 30},
-                                                  {QHostAddress{"172.23.58.1"}, 30},
-                                                  {QHostAddress{"172.24.58.1"}, 30},
-                                                  {QHostAddress{"172.25.58.1"}, 30},
-                                                  {QHostAddress{"172.26.58.1"}, 30},
-                                                  {QHostAddress{"172.27.58.1"}, 30},
-                                                  {QHostAddress{"172.28.58.1"}, 30},
-                                                  {QHostAddress{"172.29.58.1"}, 30},
-                                                  {QHostAddress{"172.30.58.1"}, 30},
-                                                  {QHostAddress{"172.31.58.1"}, 30},
-                                                  {QHostAddress{"192.168.58.1"}, 30},
-                                                  {QHostAddress{"10.17.20.1"}, 30}};
-    return findUnusedSubnet(candidateSubnets, usedSubnets);
+    const std::pair<Subnet, bool> result = findUnusedSubnet(pool->candidates(),
+                                                            usedSubnets);
+    if (!result.second)
+        return SubnetReservation{};
+
+    return pool->reserve(result.first);
 }
 
 std::pair<Subnet, bool> findUnusedSubnet(const std::vector<Subnet> &candidateSubnets,
@@ -74,4 +62,93 @@ std::pair<Subnet, bool> findUnusedSubnet(const std::vector<Subnet> &candidateSub
             return std::make_pair(candidate, true);
     }
     return std::make_pair(Subnet{}, false);
+}
+
+SubnetPool *SubnetPool::instance()
+{
+    static SubnetPool pool;
+    return &pool;
+}
+
+std::vector<Subnet> SubnetPool::candidates()
+{
+    QMutexLocker locker{&m_lock};
+    std::vector<Subnet> freeCandidates;
+    freeCandidates.reserve(m_candidates.size() - m_reserved.size());
+    std::copy_if(m_candidates.begin(), m_candidates.end(),
+                 std::back_inserter(freeCandidates),
+                 [&](const Subnet &subnet) {
+                     return std::find(m_reserved.begin(), m_reserved.end(), subnet)
+                             == m_reserved.end();
+                 });
+    return freeCandidates;
+}
+
+SubnetReservation SubnetPool::reserve(const Subnet &subnet)
+{
+    QMutexLocker locker{&m_lock};
+
+    const auto iter = std::find(m_reserved.begin(), m_reserved.end(), subnet);
+    if (iter != m_reserved.end()) // Already reserved
+        return SubnetReservation{};
+
+    m_reserved.push_back(subnet);
+    return std::make_shared<SubnetReservationImpl>(subnet);
+}
+
+void SubnetPool::free(const Subnet &subnet)
+{
+    QMutexLocker locker{&m_lock};
+
+    const auto iter = std::find(m_reserved.begin(), m_reserved.end(), subnet);
+    if (iter != m_reserved.end())
+        m_reserved.erase(iter);
+}
+
+SubnetPool::SubnetPool()
+    : m_lock{},
+      m_candidates(),
+      m_reserved{}
+{
+    // MSVC 2013 gave error C2707 when trying to use initializer list for m_candidates
+    m_candidates.push_back({QHostAddress{"172.16.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.17.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.18.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.19.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.20.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.21.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.22.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.23.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.24.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.25.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.26.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.27.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.28.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.29.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.30.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"172.31.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"192.168.58.1"}, 30});
+    m_candidates.push_back({QHostAddress{"10.17.20.1"}, 30});
+}
+
+bool operator==(const Subnet &lhs, const Subnet &rhs)
+{
+    return lhs.address == rhs.address
+            && lhs.prefixLength == rhs.prefixLength;
+}
+
+SubnetReservationImpl::SubnetReservationImpl(const Subnet &subnet)
+    : m_subnet(subnet) // uniform initialization with {} fails in MSVC 2013 with error C2797
+{
+
+}
+
+SubnetReservationImpl::~SubnetReservationImpl()
+{
+    SubnetPool::instance()->free(m_subnet);
+}
+
+Subnet SubnetReservationImpl::subnet() const
+{
+    return m_subnet;
 }

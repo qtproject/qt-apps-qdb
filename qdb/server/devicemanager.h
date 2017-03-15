@@ -34,6 +34,7 @@ struct DeviceInformation
     QString hostMac;
     QString ipAddress;
     UsbAddress usbAddress;
+    SubnetReservation reservation;
 };
 
 class DeviceManager : public QObject
