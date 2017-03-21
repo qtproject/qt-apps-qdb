@@ -22,6 +22,7 @@
 #define NETWORKCONFIGURATIONEXECUTOR_H
 
 #include "executor.h"
+#include "libqdb/networkconfigurationcommon.h"
 class Stream;
 
 class NetworkConfigurationExecutor : public Executor
@@ -34,7 +35,7 @@ public slots:
     void receive(StreamPacket packet) override;
 
 private:
-    void failedResponse();
+    void simpleResponse(ConfigurationResult result);
 
     Stream *m_stream;
 };

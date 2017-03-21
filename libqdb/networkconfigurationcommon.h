@@ -18,37 +18,15 @@
 ** $QT_END_LICENSE$
 **
 ******************************************************************************/
-#ifndef NETWORKCONFIGURATOR_H
-#define NETWORKCONFIGURATOR_H
+#ifndef NETWORKCONFIGURATIONCOMMON_H
+#define NETWORKCONFIGURATIONCOMMON_H
 
-#include "libqdb/networkconfigurationcommon.h"
-#include "usb-host/usbdevice.h"
-class Connection;
-class ConnectionPool;
+#include <cstdint>
 
-#include <QtCore/qobject.h>
-
-#include <memory>
-#include <vector>
-
-class NetworkConfigurator : public QObject
-{
-    Q_OBJECT
-public:
-    NetworkConfigurator(ConnectionPool *pool, UsbDevice device);
-
-    void configure();
-
-signals:
-    void configured(UsbDevice device, bool success);
-
-private slots:
-    void handleAlreadySetResponse(QString subnet);
-    void handleResponse(ConfigurationResult result);
-
-private:
-    std::shared_ptr<Connection> m_connection;
-    UsbDevice m_device;
+enum class ConfigurationResult : uint32_t {
+    Success,
+    Failure,
+    AlreadySet ,
 };
 
-#endif // NETWORKCONFIGURATOR_H
+#endif // NETWORKCONFIGURATIONCOMMON_H

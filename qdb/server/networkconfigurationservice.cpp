@@ -67,8 +67,26 @@ void NetworkConfigurationService::receive(StreamPacket packet)
     uint32_t value;
     packet >> value;
 
+    const auto result = static_cast<ConfigurationResult>(value);
+    if (result != ConfigurationResult::Success
+            && result != ConfigurationResult::Failure
+            && result != ConfigurationResult::AlreadySet) {
+        qCCritical(configurationC) << "Unknown network configuration result" << value
+                                   << "received from device";
+        failedResponse();
+    }
+
+    if (result == ConfigurationResult::AlreadySet) {
+        QString subnet;
+        packet >> subnet;
+
+        m_responded = true;
+        emit alreadySetResponse(subnet);
+        return;
+    }
+
     m_responded = true;
-    emit response(value == 1);
+    emit response(result);
 }
 
 void NetworkConfigurationService::onStreamClosed()
@@ -85,7 +103,7 @@ void NetworkConfigurationService::handleDisconnected()
 void NetworkConfigurationService::failedResponse()
 {
     if (!m_responded) {
-        emit response(false);
+        emit response(ConfigurationResult::Failure);
         m_responded = true;
     }
 }

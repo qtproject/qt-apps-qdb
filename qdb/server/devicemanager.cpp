@@ -51,9 +51,13 @@ void DeviceManager::start()
 
 void DeviceManager::handleDeviceConfigured(UsbDevice device, bool success)
 {
-    qCDebug(devicesC) << "Configured device" << device.serial
-                      << (success ? "successfully" : "unsuccessfully");
-    fetchDeviceInformation(device);
+    if (success) {
+        qCDebug(devicesC) << "Configured device" << device.serial << "successfully";
+        fetchDeviceInformation(device);
+    } else {
+        qCWarning(devicesC) << "Failed to configure device" << device.serial;
+        // Discard the device
+    }
 }
 
 void DeviceManager::handleDeviceInformation(UsbDevice device, DeviceInformationFetcher::Info info)

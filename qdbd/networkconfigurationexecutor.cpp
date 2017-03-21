@@ -20,13 +20,12 @@
 ******************************************************************************/
 #include "networkconfigurationexecutor.h"
 
-#include "configuration.h"
+#include "networkconfiguration.h"
 #include "libqdb/stream.h"
 
 #include <QtCore/qloggingcategory.h>
-#include <QtCore/qprocess.h>
 
-Q_LOGGING_CATEGORY(configurationC, "qdb.executors.networkconfiguration")
+Q_LOGGING_CATEGORY(configurationExecC, "qdb.executors.networkconfiguration")
 
 NetworkConfigurationExecutor::NetworkConfigurationExecutor(Stream *stream)
     : m_stream{stream}
@@ -41,30 +40,28 @@ void NetworkConfigurationExecutor::receive(StreamPacket packet)
     packet >> subnetString;
 
     if (subnetString.isEmpty()) {
-        failedResponse();
+        simpleResponse(ConfigurationResult::Failure);
         return;
     }
 
-    QProcess process;
-    process.start(Configuration::networkScript(), QStringList{"--set", subnetString});
-    process.waitForFinished();
-    if (process.exitCode() != 0) {
-        qCWarning(configurationC) << "Using script to configure the network failed";
-        failedResponse();
+    auto *networkConfiguration = NetworkConfiguration::instance();
+
+    const auto result = networkConfiguration->set(subnetString);
+    if (result == ConfigurationResult::AlreadySet) {
+        StreamPacket response;
+        const auto value = static_cast<uint32_t>(result);
+        response << value;
+        response << networkConfiguration->subnet();
+        m_stream->write(response);
         return;
     }
-
-    StreamPacket response;
-    uint32_t value = 1u;
-    response << value;
-    m_stream->write(response);
-    qCDebug(configurationC) << "Configured device network to" << subnetString;
+    simpleResponse(result);
 }
 
-void NetworkConfigurationExecutor::failedResponse()
+void NetworkConfigurationExecutor::simpleResponse(ConfigurationResult result)
 {
     StreamPacket response;
-    uint32_t value = 0u;
+    uint32_t value = static_cast<uint32_t>(result);
     response << value;
     m_stream->write(response);
 }

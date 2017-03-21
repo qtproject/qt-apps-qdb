@@ -66,6 +66,8 @@ void NetworkConfigurator::configure()
             service, &QObject::deleteLater);
     connect(service, &NetworkConfigurationService::response,
             this, &NetworkConfigurator::handleResponse);
+    connect(service, &NetworkConfigurationService::alreadySetResponse,
+            this, &NetworkConfigurator::handleAlreadySetResponse);
     connect(service, &Service::initialized, [=]() {
         service->configure(subnetString);
     });
@@ -73,7 +75,41 @@ void NetworkConfigurator::configure()
     service->initialize();
 }
 
-void NetworkConfigurator::handleResponse(bool success)
+void NetworkConfigurator::handleAlreadySetResponse(QString subnet)
 {
-    emit configured(m_device, success);
+    const QStringList parts = subnet.split(QLatin1Char{'/'});
+    if (parts.size() != 2) {
+        qCCritical(configuratorC) << "Invalid already set subnet from device" << m_device.serial
+                                  << ":" << subnet;
+        emit configured(m_device, false);
+        return;
+    }
+
+    const QHostAddress address{parts[0]};
+    const int prefixLength = parts[1].toInt();
+    if (address.isNull() || prefixLength < 1 || prefixLength > 32) {
+        qCCritical(configuratorC) << "Invalid already set subnet from device" << m_device.serial
+                                  << ":" << subnet;
+        emit configured(m_device, false);
+        return;
+    }
+
+    Subnet subnetStruct{address, prefixLength};
+    SubnetReservation reservation = SubnetPool::instance()->reserve(subnetStruct);
+    if (!reservation) {
+        qCWarning(configuratorC) << "Could not reserve already set subnet" << subnet
+                                 << "for device" << m_device.serial;
+        emit configured(m_device, false);
+        return;
+    }
+
+    qCDebug(configuratorC) << "Reused already set configuration" << subnet << "for device"
+                           << m_device.serial;
+    m_device.reservation = reservation;
+    emit configured(m_device, true);
+}
+
+void NetworkConfigurator::handleResponse(ConfigurationResult result)
+{
+    emit configured(m_device, result == ConfigurationResult::Success);
 }

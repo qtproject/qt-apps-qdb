@@ -20,14 +20,11 @@
 ******************************************************************************/
 #include "usbgadgetcontrol.h"
 
-#include "configuration.h"
-#include "libqdb/protocol/protocol.h"
-#include "libqdb/protocol/qdbmessage.h"
+#include "networkconfiguration.h"
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qfile.h>
 #include <QtCore/qloggingcategory.h>
-#include <QtCore/qprocess.h>
 #include <QtCore/qtimer.h>
 
 #include <linux/usb/functionfs.h>
@@ -92,14 +89,7 @@ void UsbGadgetControl::monitor()
     const auto eventType = static_cast<usb_functionfs_event_type>(event->type);
     qCDebug(usbC) << "USB FFS event:" << eventTypeName(eventType);
     if (eventType == FUNCTIONFS_DISABLE || eventType == FUNCTIONFS_SUSPEND) {
-        QProcess process;
-        process.start(Configuration::networkScript(), QStringList{"--reset"});
-        process.waitForFinished();
-        if (process.exitCode() != 0) {
-            qCWarning(usbC) << "Using script" << Configuration::networkScript()
-                            << "to reset the network configuration failed";
-            return;
-        }
-        qCDebug(usbC) << "Reset the network configuration";
+        auto *networkConfiguration = NetworkConfiguration::instance();
+        networkConfiguration->reset();
     }
 }

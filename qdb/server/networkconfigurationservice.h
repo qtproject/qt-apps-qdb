@@ -21,6 +21,7 @@
 #ifndef NETWORKCONFIGURATIONSERVICE_H
 #define NETWORKCONFIGURATIONSERVICE_H
 
+#include "libqdb/networkconfigurationcommon.h"
 #include "service.h"
 class Connection;
 
@@ -36,7 +37,8 @@ public:
     void configure(QString subnet);
 
 signals:
-    void response(bool success);
+    void response(ConfigurationResult result);
+    void alreadySetResponse(QString subnet);
 
 public slots:
     void receive(StreamPacket packet) override;
