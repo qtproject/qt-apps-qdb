@@ -56,6 +56,8 @@ int execClient(const QCoreApplication &app, const QString &command)
     Client client;
     if (command == "devices")
         client.askDevices();
+    else if (command == "start-server")
+        client.startServer();
     else if (command == "stop-server")
         client.stopServer();
     else if (command == "watch-devices")
@@ -75,6 +77,12 @@ Client::Client()
 void Client::askDevices()
 {
     setupSocketAndConnect(&Client::handleDevicesConnection, &Client::handleDevicesError);
+}
+
+void Client::startServer()
+{
+    forkHostServer();
+    shutdown(0);
 }
 
 void Client::stopServer()

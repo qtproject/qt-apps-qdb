@@ -46,6 +46,7 @@ public:
 
 public slots:
     void askDevices();
+    void startServer();
     void stopServer();
     void watchDevices();
 
