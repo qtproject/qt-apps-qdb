@@ -46,9 +46,9 @@ int execHostServer(const QCoreApplication &app, const QCommandLineParser &parser
 
     QString filterRules;
     if (!parser.isSet("debug-transport"))
-        filterRules.append("transport=false\n");
+        filterRules.append("qdb.transport.debug=false\n");
     if (!parser.isSet("debug-connection"))
-        filterRules.append("connection=false\n");
+        filterRules.append("qdb.connection.debug=false\n");
     QLoggingCategory::setFilterRules(filterRules);
 
     InterruptSignalHandler signalHandler;

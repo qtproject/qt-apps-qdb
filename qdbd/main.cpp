@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
 
     QString filterRules;
     if (!parser.isSet("debug-transport")) {
-        filterRules.append("transport.debug=false\n");
+        filterRules.append("qdb.transport.debug=false\n");
     }
     if (!parser.isSet("debug-connection")) {
-        filterRules.append("connection.debug=false\n");
+        filterRules.append("qdb.connection.debug=false\n");
     }
     QLoggingCategory::setFilterRules(filterRules);
 
