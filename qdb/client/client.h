@@ -31,18 +31,21 @@
 
 #include <QtNetwork/qlocalsocket.h>
 QT_BEGIN_NAMESPACE
+class QCommandLineParser;
 class QCoreApplication;
 QT_END_NAMESPACE
 
 #include <memory>
 
-int execClient(const QCoreApplication &app, const QString &command);
+int execClient(const QCoreApplication &app, const QString &command, const QCommandLineParser &parser);
 
 class Client : public QObject
 {
     Q_OBJECT
 public:
     Client();
+
+    void ignoreErrors(bool ignoreErrors);
 
 public slots:
     void askDevices();
@@ -66,6 +69,7 @@ private:
 
     std::unique_ptr<QLocalSocket> m_socket;
     bool m_triedToStart;
+    bool m_ignoreErrors;
 };
 
 #endif // CLIENT_H

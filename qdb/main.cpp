@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.addOption({"debug-transport", "Print each message that is sent. (Only server process)"});
     parser.addOption({"debug-connection", "Show enqueued messages. (Only server process)"});
+    parser.addOption({{"f", "force"}, "Ignore errors"});
     auto commandList = clientCommands;
     commandList << "server";
     std::sort(commandList.begin(), commandList.end());
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
     if (command == "server") {
         return execHostServer(app, parser);
     } else if (clientCommands.contains(command)) {
-        return execClient(app, command);
+        return execClient(app, command, parser);
     } else {
         std::cerr << "Unrecognized command: " << qUtf8Printable(command) << std::endl;
         return 1;

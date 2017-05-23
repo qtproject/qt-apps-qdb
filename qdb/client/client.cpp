@@ -33,6 +33,7 @@
 #include "libqdb/qdbconstants.h"
 
 #include <QtCore/qcoreapplication.h>
+#include <QtCore/qcommandlineparser.h>
 #include <QtCore/qjsondocument.h>
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qprocess.h>
@@ -51,9 +52,11 @@ void forkHostServer()
         std::cerr << "Could not start QDB host server\n";
 }
 
-int execClient(const QCoreApplication &app, const QString &command)
+int execClient(const QCoreApplication &app, const QString &command, const QCommandLineParser &parser)
 {
     Client client;
+    client.ignoreErrors(parser.isSet("force"));
+
     if (command == "devices")
         client.askDevices();
     else if (command == "start-server")
@@ -69,9 +72,15 @@ int execClient(const QCoreApplication &app, const QString &command)
 
 Client::Client()
     : m_socket{nullptr},
-      m_triedToStart{false}
+      m_triedToStart{false},
+      m_ignoreErrors{false}
 {
 
+}
+
+void Client::ignoreErrors(bool ignoreErrors)
+{
+    m_ignoreErrors = ignoreErrors;
 }
 
 void Client::askDevices()
@@ -221,6 +230,9 @@ void Client::setupSocketAndConnect(Client::ConnectedSlot handleConnection, Clien
 
 void Client::shutdown(int exitCode)
 {
+    if (m_ignoreErrors)
+        exitCode = 0;
+
     QTimer::singleShot(0, [=]() {
         QCoreApplication::instance()->exit(exitCode);
     });
