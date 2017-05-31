@@ -1,1 +1,1 @@
-DEFINES += QDB_VERSION=\\\"1.0.0\\\"
+DEFINES += QDB_VERSION=\\\"1.0.1\\\"
