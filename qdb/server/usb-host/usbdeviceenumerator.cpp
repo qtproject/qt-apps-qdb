@@ -132,9 +132,16 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
     int ret = libusb_open(device, &handle);
     if (ret) {
         const auto address = getAddress(device);
-        qCWarning(usbC) << "Could not open USB device at" << address.busNumber
-                        << ":" << address.deviceAddress << "for checking serial number:"
-                        << libusb_error_name(ret);
+        if (ret == LIBUSB_ERROR_ACCESS) {
+            qCWarning(usbC) << "Access to USB device at" << address.busNumber
+                            << ":" << address.deviceAddress << "was denied."
+                            << "Check the manual for setting up access to USB devices.";
+        } else {
+            qCWarning(usbC) << "Could not open USB device at" << address.busNumber
+                            << ":" << address.deviceAddress << "for checking serial number:"
+                            << libusb_error_name(ret);
+        }
+
         return std::make_pair(false, UsbDevice{});
     }
     ScopeGuard deviceGuard = [=]() {

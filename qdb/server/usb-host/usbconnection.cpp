@@ -84,7 +84,12 @@ bool UsbConnection::open(OpenMode mode)
 
     ret = libusb_open(m_device.pointer(), &m_handle);
     if (ret) {
-        qCDebug(usbC) << "Could not open device:" << libusb_error_name(ret);
+        if (ret == LIBUSB_ERROR_ACCESS) {
+            qCWarning(usbC) << "Access to USB device was denied."
+                            << "Check the manual for setting up access to USB devices.";
+        } else {
+            qCWarning(usbC) << "Could not open device:" << libusb_error_name(ret);
+        }
         return false;
     }
 
