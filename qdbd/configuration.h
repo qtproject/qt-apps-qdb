@@ -38,6 +38,7 @@ public:
     static QString gadgetConfigFsDir();
     static QString networkScript();
     static QString rndisFunctionName();
+    static QString udcDriverDir();
     static void setFunctionFsDir(const QString &path);
     static void setGadgetConfigFsDir(const QString &path);
     static void setNetworkScript(const QString &script);
@@ -48,6 +49,7 @@ private:
     static QString s_gadgetConfigFsDir;
     static QString s_networkScript;
     static QString s_rndisFunctionName;
+    static QString s_udcDriverDir;
 };
 
 #endif // CONFIGURATION_H

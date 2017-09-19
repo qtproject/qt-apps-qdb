@@ -50,6 +50,11 @@ QString Configuration::rndisFunctionName()
     return s_rndisFunctionName;
 }
 
+QString Configuration::udcDriverDir()
+{
+    return s_udcDriverDir;
+}
+
 void Configuration::setFunctionFsDir(const QString &path)
 {
     s_functionFsDir = QDir::cleanPath(path);
@@ -74,3 +79,4 @@ QString Configuration::s_functionFsDir = "/dev/usb-ffs/qdb";
 QString Configuration::s_gadgetConfigFsDir = "/sys/kernel/config/usb_gadget/g1";
 QString Configuration::s_rndisFunctionName = "rndis.usb0";
 QString Configuration::s_networkScript = "b2qt-gadget-network.sh";
+QString Configuration::s_udcDriverDir = "/sys/class/udc/";

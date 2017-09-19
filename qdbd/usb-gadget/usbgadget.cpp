@@ -40,6 +40,8 @@
 #include <QtCore/qloggingcategory.h>
 #include <QtCore/qthread.h>
 
+#include <QDirIterator>
+
 #include <linux/usb/functionfs.h>
 
 Q_LOGGING_CATEGORY(usbC, "qdb.usb");
@@ -186,6 +188,7 @@ bool UsbGadget::open(QIODevice::OpenMode mode)
     startControlThread();
     startReadThread();
     startWriteThread();
+    initializeGadgetWithUdc();
 
     return true;
 }
@@ -271,3 +274,43 @@ bool UsbGadget::openControlEndpoint()
     return true;
 }
 
+/**
+ * Initialize usb gadget with the first UDC driver
+ */
+void UsbGadget::initializeGadgetWithUdc()
+{
+    QString driverName = []() {
+        QDirIterator it(Configuration::udcDriverDir());
+        while (it.hasNext()) {
+            it.next();
+            const QString candidate = it.fileName();
+            if (candidate != QLatin1String(".") && candidate != QLatin1String(".."))
+                return candidate;
+        }
+        return QString{};
+    }();
+    if (driverName.isEmpty()) {
+        qCCritical(usbC) << "Failed to initialize USB gadget, no UDC drivers found in"
+                         << Configuration::udcDriverDir();
+        return;
+    }
+
+    const QString gadgetConfigPath = Configuration::gadgetConfigFsDir() + QLatin1String("/UDC");
+    QFile gadgetConfigFile{gadgetConfigPath};
+    if (!gadgetConfigFile.exists()) {
+        qCCritical(usbC) << "Failed to initialize USB gadget, no gadget file found in"
+                         << gadgetConfigPath;
+        return;
+    }
+    if (!gadgetConfigFile.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
+        qCCritical(usbC) << "Failed to initialize USB gadget, can't open" << gadgetConfigPath;
+        return;
+    }
+    if (gadgetConfigFile.write(driverName.toUtf8()) == -1) {
+        qCCritical(usbC) << "Failed to initialize USB gadget, can't write to"
+                         << gadgetConfigPath;
+        return;
+    }
+    gadgetConfigFile.close();
+    qCDebug(usbC) << "Initialized USB gadget UDC driver";
+}

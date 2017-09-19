@@ -68,6 +68,7 @@ private:
     void startControlThread();
     void startReadThread();
     void startWriteThread();
+    void initializeGadgetWithUdc();
 
     QFile m_controlEndpoint;
     // Endpoints are named in line with USB terminology. Out means from host to
