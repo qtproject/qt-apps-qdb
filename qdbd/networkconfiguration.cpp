@@ -52,10 +52,18 @@ ConfigurationResult NetworkConfiguration::set(QString subnetString)
     m_subnetString = subnetString;
 
     QProcess process;
-    process.start(Configuration::networkScript(), QStringList{"--set", subnetString});
+    process.setProcessChannelMode(QProcess::MergedChannels);
+    QObject::connect(&process, &QProcess::readyReadStandardOutput, &process, [&]() {
+        qCDebug(configurationC) << "Script:" << process.readAllStandardOutput();
+    });
+
+    const QStringList args = QStringList{"--set", subnetString};
+    qCDebug(configurationC) << "Running network configuration script" << Configuration::networkScript() << args;
+    process.start(Configuration::networkScript(), args);
+
     process.waitForFinished();
     if (process.exitCode() != 0) {
-        qCWarning(configurationC) << "Using script to configure the network failed";
+        qCWarning(configurationC) << "Using script" << Configuration::networkScript() << "to configure the network failed";
         m_subnetString.clear();
         return ConfigurationResult::Failure;
     }
@@ -70,7 +78,15 @@ bool NetworkConfiguration::reset()
     m_subnetString.clear();
 
     QProcess process;
-    process.start(Configuration::networkScript(), QStringList{"--reset"});
+    process.setProcessChannelMode(QProcess::MergedChannels);
+    QObject::connect(&process, &QProcess::readyReadStandardOutput, &process, [&]() {
+        qCDebug(configurationC) << "Script:" << process.readAllStandardOutput();
+    });
+
+    const QStringList args = QStringList{"--reset"};
+    qCDebug(configurationC) << "Running network configuration script" << Configuration::networkScript() << args;
+    process.start(Configuration::networkScript(), args);
+
     process.waitForFinished();
     if (process.exitCode() != 0) {
         qCWarning(configurationC) << "Using script" << Configuration::networkScript()
