@@ -36,6 +36,7 @@ QT_BEGIN_NAMESPACE
 class QLocalSocket;
 QT_END_NAMESPACE
 
+enum class ResponseType;
 using ServletId = uint32_t;
 
 // Takes ownership of the passed QLocalSocket
@@ -63,6 +64,7 @@ private:
     void replyDisconnectedDevice(const QString &serial);
     void startWatchingDevices();
     void stopServer();
+    bool sendResponse(ResponseType type, const QString &fieldName, const QJsonValue &value);
 
     ServletId m_id;
     QLocalSocket *m_socket;

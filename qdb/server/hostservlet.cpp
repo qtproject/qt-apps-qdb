@@ -118,6 +118,22 @@ void HostServlet::handleRequest()
     }
 }
 
+bool HostServlet::sendResponse(ResponseType type, const QString &fieldName, const QJsonValue &value)
+{
+    QJsonObject response = initializeResponse(type);
+
+    if (!fieldName.isEmpty())
+        response[fieldName] = value;
+
+    if (!m_socket || !m_socket->isWritable()) {
+        qCWarning(hostServerC) << "Could not reply to client" << m_id;
+        return false;
+    }
+    m_socket->write(serialiseResponse(response));
+    qCDebug(hostServerC) << "Sent" << responseTypeString(type) << "information to client" << m_id;
+    return true;
+}
+
 void HostServlet::replyDevices()
 {
     QJsonArray infoArray;
@@ -125,42 +141,19 @@ void HostServlet::replyDevices()
     for (const auto &deviceInfo : deviceInfos)
         infoArray << deviceInformationToJsonObject(deviceInfo);
 
-    QJsonObject response = initializeResponse(ResponseType::Devices);
-    response["devices"] = infoArray;
-
-    if (!m_socket || !m_socket->isWritable()) {
-        qCWarning(hostServerC) << "Could not reply to client" << m_id;
+    if (!sendResponse(ResponseType::Devices, "devices", infoArray))
         return;
-    }
-    m_socket->write(serialiseResponse(response));
-    qCDebug(hostServerC) << "Replied device information to client" << m_id;
     close();
 }
 
 void HostServlet::replyNewDevice(const DeviceInformation &deviceInfo)
 {
-    QJsonObject response = initializeResponse(ResponseType::NewDevice);
-    response["device"] = deviceInformationToJsonObject(deviceInfo);
-
-    if (!m_socket || !m_socket->isWritable()) {
-        qCWarning(hostServerC) << "Could not send new device information to client" << m_id;
-        return;
-    }
-    m_socket->write(serialiseResponse(response));
-    qCDebug(hostServerC) << "Sent new device information to client" << m_id;
+    sendResponse(ResponseType::NewDevice, "device", deviceInformationToJsonObject(deviceInfo));
 }
 
 void HostServlet::replyDisconnectedDevice(const QString &serial)
 {
-    QJsonObject response = initializeResponse(ResponseType::DisconnectedDevice);
-    response["serial"] = serial;
-
-    if (!m_socket || !m_socket->isWritable()) {
-        qCWarning(hostServerC) << "Could not send disconnected device information to client" << m_id;
-        return;
-    }
-    m_socket->write(serialiseResponse(response));
-    qCDebug(hostServerC) << "Sent disconnected device information to client" << m_id;
+    sendResponse(ResponseType::DisconnectedDevice, "serial", serial);
 }
 
 void HostServlet::startWatchingDevices()
@@ -177,14 +170,7 @@ void HostServlet::startWatchingDevices()
 
 void HostServlet::stopServer()
 {
-    QJsonObject response = initializeResponse(ResponseType::Stopping);
-
-    if (!m_socket || !m_socket->isWritable()) {
-        qCWarning(hostServerC) << "Could not acknowledge stopping to client" << m_id;
-    } else {
-        m_socket->write(serialiseResponse(response));
-        qCDebug(hostServerC) << "Acknowledged stopping to client" << m_id;
-    }
+    sendResponse(ResponseType::Stopping, QString(), QJsonValue());
 
     emit serverStopRequested();
     // All servlets, including this one will be closed during shutdown
