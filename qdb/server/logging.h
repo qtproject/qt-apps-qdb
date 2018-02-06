@@ -29,6 +29,27 @@
 #ifndef QDB_LOGGING_H
 #define QDB_LOGGING_H
 
+#include <QObject>
+#include <QContiguousCache>
+#include <QPair>
+
 void setupLogging();
+
+class Logging : public QObject
+{
+Q_OBJECT
+public:
+    void clearMessages();
+    const QContiguousCache<QPair<int, QString>> &getMessages();
+    static Logging &instance();
+    void emitNewMessage(QtMsgType type, const QString &message);
+
+private:
+    Logging();
+    QContiguousCache<QPair<int, QString>> m_messages;
+
+signals:
+    void newMessage(QtMsgType type, const QString &);
+};
 
 #endif // QDB_LOGGING_H

@@ -73,6 +73,10 @@ void hostServerMessageHandler(QtMsgType type, const QMessageLogContext &context,
 
     const auto message = qFormatLogMessage(type, context, msg);
     const auto fullMsg = QString{"%1 %2\n"}.arg(prefix).arg(message).toUtf8();
+
+    if (type == QtInfoMsg || type == QtWarningMsg || type == QtCriticalMsg || type ==  QtFatalMsg)
+        Logging::instance().emitNewMessage(type, message);
+
     auto written = logFile.write(fullMsg);
     if (written != fullMsg.size()) {
         qInstallMessageHandler(nullptr);
@@ -107,4 +111,33 @@ void setupLogging()
             qWarning() << "Could not find writable application data location, logging to console";
         }
     }
+
+    Logging::instance();
+}
+
+void Logging::clearMessages()
+{
+    m_messages.clear();
+}
+
+const QContiguousCache<QPair<int, QString>> &Logging::getMessages()
+{
+    return m_messages;
+}
+
+Logging::Logging()
+{
+    m_messages.setCapacity(200);
+}
+
+Logging &Logging::instance()
+{
+    static Logging logging;
+    return logging;
+}
+
+void Logging::emitNewMessage(QtMsgType type, const QString &message)
+{
+    m_messages.append(qMakePair(type, message));
+    emit newMessage(type, message);
 }
