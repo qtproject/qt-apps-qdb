@@ -42,6 +42,9 @@ enum class RequestType
     Devices,
     WatchDevices,
     StopServer,
+    WatchMessages,
+    Messages,
+    MessagesAndClear,
 };
 
 QByteArray createRequest(const RequestType &type);
@@ -57,6 +60,7 @@ enum class ResponseType
     Stopping,
     InvalidRequest,
     UnsupportedVersion,
+    Messages,
 };
 
 QJsonObject initializeResponse(const ResponseType &type);

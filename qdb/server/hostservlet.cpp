@@ -34,6 +34,7 @@
 #include <QtCore/qjsonobject.h>
 #include <QtCore/qloggingcategory.h>
 #include <QtNetwork/qlocalsocket.h>
+#include "logging.h"
 
 Q_DECLARE_LOGGING_CATEGORY(hostServerC);
 
@@ -109,6 +110,18 @@ void HostServlet::handleRequest()
     case RequestType::StopServer:
         stopServer();
         break;
+    case RequestType::Messages:
+        replyMessages();
+        close();
+        break;
+    case RequestType::MessagesAndClear:
+        replyMessages();
+        Logging::instance().clearMessages();
+        close();
+        break;
+    case RequestType::WatchMessages:
+        startWatchingMessages();
+        break;
     case RequestType::Unknown:
         qCWarning(hostServerC) << "Request from client" << m_id << "is invalid:" << requestBytes;
         const QJsonObject response = initializeResponse(ResponseType::InvalidRequest);
@@ -151,6 +164,22 @@ void HostServlet::replyNewDevice(const DeviceInformation &deviceInfo)
     sendResponse(ResponseType::NewDevice, "device", deviceInformationToJsonObject(deviceInfo));
 }
 
+void HostServlet::replyMessages()
+{
+    QJsonArray infoArray;
+    const auto &messages = Logging::instance().getMessages();
+
+    for (int i = 0; i < messages.count(); ++i) {
+        const auto &item = messages.at(i);
+        QJsonObject info;
+        info["type"] = item.first;
+        info["text"] = item.second;
+        infoArray << info;
+    }
+
+    sendResponse(ResponseType::Messages, "messages", infoArray);
+}
+
 void HostServlet::replyDisconnectedDevice(const QString &serial)
 {
     sendResponse(ResponseType::DisconnectedDevice, "serial", serial);
@@ -166,6 +195,22 @@ void HostServlet::startWatchingDevices()
     for (const auto &deviceInfo : deviceInfos)
         replyNewDevice(deviceInfo);
     qCDebug(hostServerC) << "Reported initial devices to client" << m_id;
+}
+
+void HostServlet::startWatchingMessages()
+{
+    qCDebug(hostServerC) << "Starting to watch messages for client" << m_id;
+    connect(&Logging::instance(), &Logging::newMessage, this, [=](QtMsgType type, const QString &message) {
+          QJsonArray infoArray;
+          QJsonObject info;
+          info["type"] = type;
+          info["text"] = message;
+          infoArray << info;
+          sendResponse(ResponseType::Messages, "messages", infoArray);
+        });
+
+    replyMessages();
+    qCDebug(hostServerC) << "Reported initial messages to client" << m_id;
 }
 
 void HostServlet::stopServer()

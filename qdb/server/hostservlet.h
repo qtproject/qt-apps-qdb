@@ -60,9 +60,11 @@ public slots:
 
 private:
     void replyDevices();
+    void replyMessages();
     void replyNewDevice(const DeviceInformation &deviceInfo);
     void replyDisconnectedDevice(const QString &serial);
     void startWatchingDevices();
+    void startWatchingMessages();
     void stopServer();
     bool sendResponse(ResponseType type, const QString &fieldName, const QJsonValue &value);
 

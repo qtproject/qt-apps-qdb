@@ -53,6 +53,9 @@ public slots:
     void startServer();
     void stopServer();
     void watchDevices();
+    void askMessages();
+    void askMessagesAndClear();
+    void watchMessages();
 
 private:
     using ConnectedSlot = void (Client::*)();
@@ -64,6 +67,10 @@ private:
     void handleStopError(QLocalSocket::LocalSocketError error);
     void handleWatchConnection();
     void handleWatchMessage();
+    void handleMessagesConnection();
+    void handleMessagesAndClearConnection();
+    void handleWatchMessagesConnection();
+    void handleMessagesMessage();
     void setupSocketAndConnect(ConnectedSlot handleConnection, ErrorSlot handleError);
     void shutdown(int exitCode);
 

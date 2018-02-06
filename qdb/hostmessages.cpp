@@ -59,6 +59,12 @@ RequestType requestType(const QJsonObject &obj)
         return RequestType::WatchDevices;
     if (fieldValue == requestTypeString(RequestType::StopServer))
         return RequestType::StopServer;
+    if (fieldValue == requestTypeString(RequestType::Messages))
+        return RequestType::Messages;
+    if (fieldValue == requestTypeString(RequestType::WatchMessages))
+        return RequestType::WatchMessages;
+    if (fieldValue == requestTypeString(RequestType::MessagesAndClear))
+        return RequestType::MessagesAndClear;
 
     return RequestType::Unknown;
 }
@@ -72,6 +78,12 @@ QString requestTypeString(const RequestType &type)
         return "watch-devices";
     case RequestType::StopServer:
         return "stop-server";
+    case RequestType::Messages:
+        return "messages";
+    case RequestType::WatchMessages:
+        return "watch-messages";
+    case RequestType::MessagesAndClear:
+        return "messages-and-clear";
     case RequestType::Unknown:
         break;
     }
@@ -97,6 +109,8 @@ ResponseType responseType(const QJsonObject &obj)
         return ResponseType::DisconnectedDevice;
     if (fieldValue == responseTypeString(ResponseType::Stopping))
         return ResponseType::Stopping;
+    if (fieldValue == responseTypeString(ResponseType::Messages))
+        return ResponseType::Messages;
     if (fieldValue == responseTypeString(ResponseType::InvalidRequest))
         return ResponseType::InvalidRequest;
     if (fieldValue == responseTypeString(ResponseType::UnsupportedVersion))
@@ -116,6 +130,8 @@ QString responseTypeString(const ResponseType &type)
         return "disconnected-device";
     case ResponseType::Stopping:
         return "stopping";
+    case ResponseType::Messages:
+        return "messages";
     case ResponseType::InvalidRequest:
         return "invalid-request";
     case ResponseType::UnsupportedVersion:

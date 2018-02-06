@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     QCoreApplication app{argc, argv};
     QCoreApplication::setApplicationVersion(QString{"%1, based on Qt %2"}.arg(QDB_VERSION).arg(QT_VERSION_STR));
 
-    QStringList clientCommands = {"devices", "start-server", "stop-server", "watch-devices"};
+    QStringList clientCommands = {"devices", "start-server", "stop-server", "watch-devices", "messages", "watch-messages", "messages-and-clear"};
 
     QCommandLineParser parser;
     parser.addHelpOption();
