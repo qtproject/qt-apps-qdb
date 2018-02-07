@@ -58,7 +58,7 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
 {
     libusb_config_descriptor *config;
     const int ret = libusb_get_active_config_descriptor(device, &config);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         const auto address = getAddress(device);
         qCWarning(usbC) << "Could not get config descriptor for device at"
                         << address.busNumber << ":" << address.deviceAddress
@@ -92,7 +92,7 @@ QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
 
     libusb_device_descriptor desc;
     int ret = libusb_get_device_descriptor(device, &desc);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         qCCritical(usbC) << "Could not get device descriptor" << libusb_error_name(ret);
         return serial;
     }
@@ -130,7 +130,7 @@ std::pair<bool, UsbDevice> makeUsbDeviceIfQdbDevice(libusb_device *device)
 
     libusb_device_handle *handle;
     int ret = libusb_open(device, &handle);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         const auto address = getAddress(device);
         if (ret == LIBUSB_ERROR_ACCESS) {
             qCWarning(usbC) << "Access to USB device at" << address.busNumber

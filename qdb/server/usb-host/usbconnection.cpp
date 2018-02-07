@@ -74,7 +74,7 @@ bool UsbConnection::open(OpenMode mode)
 
     libusb_config_descriptor *config;
     int ret = libusb_get_active_config_descriptor(m_device.pointer(), &config);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         qCWarning(usbC) << "Could not get config descriptor:" << libusb_error_name(ret);
         return false;
     }
@@ -83,7 +83,7 @@ bool UsbConnection::open(OpenMode mode)
     };
 
     ret = libusb_open(m_device.pointer(), &m_handle);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         if (ret == LIBUSB_ERROR_ACCESS) {
             qCWarning(usbC) << "Access to USB device was denied."
                             << "Check the manual for setting up access to USB devices.";
@@ -100,7 +100,7 @@ bool UsbConnection::open(OpenMode mode)
     }
 
     ret = libusb_claim_interface(m_handle, m_interfaceInfo.number);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         qCDebug(usbC) << "Could not claim interface:" << libusb_error_name(ret);
         return false;
     }
@@ -131,7 +131,7 @@ qint64 UsbConnection::writeData(const char *data, qint64 maxSize)
 
     int transferred = 0;
     int ret = libusb_bulk_transfer(m_handle, m_interfaceInfo.outAddress, (unsigned char*)data, size, &transferred, 0);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         qCCritical(usbC) << "Could not write message header:" << libusb_error_name(ret);
         return -1;
     }
@@ -141,7 +141,7 @@ qint64 UsbConnection::writeData(const char *data, qint64 maxSize)
     if (size < maxSize) {
         int rest = maxSize - size;
         int ret = libusb_bulk_transfer(m_handle, m_interfaceInfo.outAddress, (unsigned char*)data + size, rest, &transferred, 0);
-        if (ret) {
+        if (ret != LIBUSB_SUCCESS) {
             qCCritical(usbC) << "Could not write message payload:" << libusb_error_name(ret);
             return -1;
         }

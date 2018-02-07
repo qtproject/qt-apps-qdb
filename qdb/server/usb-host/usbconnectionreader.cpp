@@ -56,7 +56,7 @@ void UsbConnectionReader::executeRead()
     int transferred = 0;
     int ret = libusb_bulk_transfer(m_handle, m_inAddress, reinterpret_cast<unsigned char *>(buffer.data()),
                                    buffer.size(), &transferred, quitCheckingTimeout);
-    if (ret) {
+    if (ret != LIBUSB_SUCCESS) {
         if (ret != LIBUSB_ERROR_TIMEOUT) {
             qCWarning(usbC) << "Could not read from USB connection:" << libusb_error_name(ret);
             ++m_errorCount;

@@ -41,7 +41,7 @@ struct LibUsbContext
         : context{nullptr}
     {
         int ret = libusb_init(&context);
-        if (ret) {
+        if (ret != LIBUSB_SUCCESS) {
             qCCritical(usbC) << "Could not initialize libusb";
         }
     }
