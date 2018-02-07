@@ -36,6 +36,7 @@ class QCoreApplication;
 QT_END_NAMESPACE
 
 #include <memory>
+#include <functional>
 
 int execClient(const QCoreApplication &app, const QString &command, const QCommandLineParser &parser);
 
@@ -55,14 +56,13 @@ public slots:
 
 private:
     using ConnectedSlot = void (Client::*)();
-    using ErrorSlot = void (Client::*)(QLocalSocket::LocalSocketError);
+    using ErrorSlot = std::function<void(QLocalSocket::LocalSocketError)>;
 
     void handleDevicesConnection();
-    void handleDevicesError(QLocalSocket::LocalSocketError error);
+    void handleErrorWithRetry(QLocalSocket::LocalSocketError error, ConnectedSlot repeatFunction);
     void handleStopConnection();
     void handleStopError(QLocalSocket::LocalSocketError error);
     void handleWatchConnection();
-    void handleWatchError(QLocalSocket::LocalSocketError error);
     void handleWatchMessage();
     void setupSocketAndConnect(ConnectedSlot handleConnection, ErrorSlot handleError);
     void shutdown(int exitCode);

@@ -85,7 +85,7 @@ void Client::ignoreErrors(bool ignoreErrors)
 
 void Client::askDevices()
 {
-    setupSocketAndConnect(&Client::handleDevicesConnection, &Client::handleDevicesError);
+    setupSocketAndConnect(&Client::handleDevicesConnection, std::bind(&Client::handleErrorWithRetry, this, std::placeholders::_1, &Client::askDevices));
 }
 
 void Client::startServer()
@@ -96,12 +96,12 @@ void Client::startServer()
 
 void Client::stopServer()
 {
-    setupSocketAndConnect(&Client::handleStopConnection, &Client::handleStopError);
+    setupSocketAndConnect(&Client::handleStopConnection, std::bind(&Client::handleStopError, this, std::placeholders::_1));
 }
 
 void Client::watchDevices()
 {
-    setupSocketAndConnect(&Client::handleWatchConnection, &Client::handleWatchError);
+    setupSocketAndConnect(&Client::handleWatchConnection, std::bind(&Client::handleErrorWithRetry, this, std::placeholders::_1, &Client::watchDevices));
 }
 
 void Client::handleDevicesConnection()
@@ -121,7 +121,7 @@ void Client::handleDevicesConnection()
     shutdown(0);
 }
 
-void Client::handleDevicesError(QLocalSocket::LocalSocketError error)
+void Client::handleErrorWithRetry(QLocalSocket::LocalSocketError error, ConnectedSlot repeatFunction)
 {
     if (error == QLocalSocket::PeerClosedError)
         return;
@@ -141,7 +141,7 @@ void Client::handleDevicesError(QLocalSocket::LocalSocketError error)
     std::cout << "Starting QDB host server\n";
     m_triedToStart = true;
     forkHostServer();
-    QTimer::singleShot(startupDelay, this, &Client::askDevices);
+    QTimer::singleShot(startupDelay, this, repeatFunction);
 }
 
 void Client::handleStopConnection()
@@ -178,29 +178,6 @@ void Client::handleWatchConnection()
 {
     connect(m_socket.get(), &QIODevice::readyRead, this, &Client::handleWatchMessage);
     m_socket->write(createRequest(RequestType::WatchDevices));
-}
-
-void Client::handleWatchError(QLocalSocket::LocalSocketError error)
-{
-    if (error == QLocalSocket::PeerClosedError)
-        return;
-    if (error != QLocalSocket::ServerNotFoundError &&
-            error != QLocalSocket::ConnectionRefusedError) {
-        std::cerr << "Unexpected QLocalSocket error:" << qUtf8Printable(m_socket->errorString())
-                  << std::endl;
-        shutdown(1);
-        return;
-    }
-
-    if (m_triedToStart) {
-        std::cerr << "Could not connect QDB host server even after trying to start it\n";
-        shutdown(1);
-        return;
-    }
-    std::cout << "Starting QDB host server\n";
-    m_triedToStart = true;
-    forkHostServer();
-    QTimer::singleShot(startupDelay, this, &Client::watchDevices);
 }
 
 void Client::handleWatchMessage()
