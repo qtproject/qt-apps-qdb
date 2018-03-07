@@ -60,9 +60,9 @@ std::pair<bool, UsbInterfaceInfo> findQdbInterface(libusb_device *device)
     const int ret = libusb_get_active_config_descriptor(device, &config);
     if (ret != LIBUSB_SUCCESS) {
         const auto address = getAddress(device);
-        qCWarning(usbC) << "Could not get config descriptor for device at"
-                        << address.busNumber << ":" << address.deviceAddress
-                        << ":" << libusb_error_name(ret);
+        qCInfo(usbC) << "Could not get config descriptor for device at"
+                     << address.busNumber << ":" << address.deviceAddress
+                     << ":" << libusb_error_name(ret);
         return std::make_pair(false, UsbInterfaceInfo{});
     }
     ScopeGuard configGuard = [&]() {

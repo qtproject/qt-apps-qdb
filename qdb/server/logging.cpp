@@ -74,7 +74,7 @@ void hostServerMessageHandler(QtMsgType type, const QMessageLogContext &context,
     const auto message = qFormatLogMessage(type, context, msg);
     const auto fullMsg = QString{"%1 %2\n"}.arg(prefix).arg(message).toUtf8();
 
-    if (type == QtInfoMsg || type == QtWarningMsg || type == QtCriticalMsg || type ==  QtFatalMsg)
+    if (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg)
         Logging::instance().emitNewMessage(type, message);
 
     auto written = logFile.write(fullMsg);
