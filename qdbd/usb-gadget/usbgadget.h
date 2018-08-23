@@ -49,7 +49,7 @@ class UsbGadget : public QIODevice
 
 public:
     UsbGadget();
-    virtual ~UsbGadget();
+    virtual ~UsbGadget() override;
 
     bool open(OpenMode mode) override;
 
