@@ -44,7 +44,7 @@ signals:
     void interrupted();
 
 private:
-    bool installSigIntHandler();
+    bool installSignalHandler();
 
     InterruptSignalHandlerPrivate* d;
 };

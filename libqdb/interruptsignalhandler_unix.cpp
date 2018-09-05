@@ -50,7 +50,8 @@ public slots:
 
 public:
     static int s_socketPair[2];
-    struct sigaction oldAction;
+    struct sigaction oldIntAction;
+    struct sigaction oldTermAction;
     std::unique_ptr<QSocketNotifier> socketNotifier = nullptr;
 
 private:
@@ -68,7 +69,7 @@ InterruptSignalHandler::InterruptSignalHandler(QObject *parent)
     d->socketNotifier = make_unique<QSocketNotifier>(d->s_socketPair[1], QSocketNotifier::Read);
     connect(d->socketNotifier.get(), &QSocketNotifier::activated, d, &InterruptSignalHandlerPrivate::handleSigInt);
 
-    if (!installSigIntHandler())
+    if (!installSignalHandler())
         qFatal("Could not install signal handler in InterruptSignalHandler");
 }
 
@@ -77,7 +78,7 @@ InterruptSignalHandler::~InterruptSignalHandler()
     delete d;
 }
 
-bool InterruptSignalHandler::installSigIntHandler()
+bool InterruptSignalHandler::installSignalHandler()
 {
     struct sigaction action;
     action.sa_handler = &InterruptSignalHandlerPrivate::sigIntHandler;
@@ -85,7 +86,9 @@ bool InterruptSignalHandler::installSigIntHandler()
     action.sa_flags = 0;
     action.sa_flags |= SA_RESTART;
 
-    if (sigaction(SIGINT, &action, &d->oldAction))
+    if (sigaction(SIGINT, &action, &d->oldIntAction))
+        return false;
+    if (sigaction(SIGTERM, &action, &d->oldTermAction))
         return false;
 
     return true;
@@ -110,8 +113,9 @@ void InterruptSignalHandlerPrivate::handleSigInt()
     char tmp;
     read(s_socketPair[1], &tmp, sizeof(tmp));
 
-    // Reset signal action to allow a second Control-C to interrupt hanging qdb
-    sigaction(SIGINT, &oldAction, nullptr);
+    // Reset signal actions to allow further signals to interrupt hanging qdb
+    sigaction(SIGINT, &oldIntAction, nullptr);
+    sigaction(SIGTERM, &oldTermAction, nullptr);
 
     emit q->interrupted();
 }

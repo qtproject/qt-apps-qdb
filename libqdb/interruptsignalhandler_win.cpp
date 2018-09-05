@@ -42,7 +42,7 @@ InterruptSignalHandler* InterruptSignalHandlerPrivate::s_handler = nullptr;
 InterruptSignalHandler::InterruptSignalHandler(QObject *parent)
     : QObject(parent)
 {
-    if (!installSigIntHandler())
+    if (!installSignalHandler())
         qFatal("Could not install signal handler in InterruptSignalHandler");
 }
 
@@ -51,7 +51,7 @@ InterruptSignalHandler::~InterruptSignalHandler()
     SetConsoleCtrlHandler(&InterruptSignalHandlerPrivate::consoleHandler, FALSE);
 }
 
-bool InterruptSignalHandler::installSigIntHandler()
+bool InterruptSignalHandler::installSignalHandler()
 {
     d->s_handler = this;
     return SetConsoleCtrlHandler(&InterruptSignalHandlerPrivate::consoleHandler, TRUE);
