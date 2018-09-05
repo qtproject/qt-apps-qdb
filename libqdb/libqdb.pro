@@ -6,11 +6,16 @@ CONFIG += staticlib
 
 SOURCES += \
     abstractconnection.cpp \
-    interruptsignalhandler.cpp \
     protocol/qdbmessage.cpp \
     protocol/qdbtransport.cpp \
     stream.cpp \
     streampacket.cpp \
+
+win32 {
+    SOURCES += interruptsignalhandler_win.cpp
+} else {
+    SOURCES += interruptsignalhandler_unix.cpp
+}
 
 HEADERS += \
     abstractconnection.h \

@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2017 The Qt Company Ltd.
+** Copyright (C) 2018 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the Qt Debug Bridge.
@@ -26,27 +26,42 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-#ifndef INTERRUPTSIGNALHANDLER_H
-#define INTERRUPTSIGNALHANDLER_H
+#include "interruptsignalhandler.h"
 
-#include <QtCore/qobject.h>
+#include <windows.h>
 
-class InterruptSignalHandlerPrivate;
-
-class InterruptSignalHandler : public QObject
+class InterruptSignalHandlerPrivate
 {
-    Q_OBJECT
 public:
-    explicit InterruptSignalHandler(QObject *parent = nullptr);
-    ~InterruptSignalHandler();
-
-signals:
-    void interrupted();
-
-private:
-    bool installSigIntHandler();
-
-    InterruptSignalHandlerPrivate* d;
+    static BOOL WINAPI consoleHandler(DWORD signal);
+    static InterruptSignalHandler* s_handler;
 };
 
-#endif // INTERRUPTSIGNALHANDLER_H
+InterruptSignalHandler* InterruptSignalHandlerPrivate::s_handler = nullptr;
+
+InterruptSignalHandler::InterruptSignalHandler(QObject *parent)
+    : QObject(parent)
+{
+    if (!installSigIntHandler())
+        qFatal("Could not install signal handler in InterruptSignalHandler");
+}
+
+InterruptSignalHandler::~InterruptSignalHandler()
+{
+    SetConsoleCtrlHandler(&InterruptSignalHandlerPrivate::consoleHandler, FALSE);
+}
+
+bool InterruptSignalHandler::installSigIntHandler()
+{
+    d->s_handler = this;
+    return SetConsoleCtrlHandler(&InterruptSignalHandlerPrivate::consoleHandler, TRUE);
+}
+
+BOOL WINAPI InterruptSignalHandlerPrivate::consoleHandler(DWORD signal)
+{
+    if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT) {
+        emit s_handler->interrupted();
+        return true;
+    }
+    return false;
+}
