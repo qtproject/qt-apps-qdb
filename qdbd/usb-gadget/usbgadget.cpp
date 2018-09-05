@@ -120,6 +120,11 @@ const struct {
     },
 };
 
+QString gadgetConfigPath()
+{
+    return Configuration::gadgetConfigFsDir() + QLatin1String("/UDC");
+}
+
 UsbGadget::UsbGadget()
     : m_controlEndpoint(Configuration::functionFsDir() + "/ep0"),
       m_outEndpoint(Configuration::functionFsDir() + "/ep1"),
@@ -149,6 +154,19 @@ UsbGadget::~UsbGadget()
         m_writeThread->terminate();
         m_readThread->wait();
     }
+
+    // Disable USB gadget configuration
+    QFile gadgetConfigFile{gadgetConfigPath()};
+    if (gadgetConfigFile.open(QIODevice::WriteOnly | QIODevice::Unbuffered)) {
+        if (gadgetConfigFile.write("") != -1)
+            qCDebug(usbC) << "Disabled USB gadget UDC driver";
+        else
+            qCWarning(usbC) << "Could not disable USB gadget UDC driver when quitting";
+    } else {
+        qCWarning(usbC) << "Could not open USB gadget UDC file for writing to disable";
+    }
+    gadgetConfigFile.close();
+
     m_inEndpoint.close();
     m_outEndpoint.close();
     m_controlEndpoint.close();
@@ -295,20 +313,19 @@ void UsbGadget::initializeGadgetWithUdc()
         return;
     }
 
-    const QString gadgetConfigPath = Configuration::gadgetConfigFsDir() + QLatin1String("/UDC");
-    QFile gadgetConfigFile{gadgetConfigPath};
+    QFile gadgetConfigFile{gadgetConfigPath()};
     if (!gadgetConfigFile.exists()) {
         qCCritical(usbC) << "Failed to initialize USB gadget, no gadget file found in"
-                         << gadgetConfigPath;
+                         << gadgetConfigPath();
         return;
     }
     if (!gadgetConfigFile.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
-        qCCritical(usbC) << "Failed to initialize USB gadget, can't open" << gadgetConfigPath;
+        qCCritical(usbC) << "Failed to initialize USB gadget, can't open" << gadgetConfigPath();
         return;
     }
     if (gadgetConfigFile.write(driverName.toUtf8()) == -1) {
         qCCritical(usbC) << "Failed to initialize USB gadget, can't write to"
-                         << gadgetConfigPath;
+                         << gadgetConfigPath();
         return;
     }
     gadgetConfigFile.close();
