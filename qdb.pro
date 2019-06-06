@@ -17,7 +17,7 @@ sub_tests.depends += libqdb
     sub_tests.depends += qdb
 }
 
-unix {
+linux {
     SUBDIRS += qdbd
 
     qdbd.depends += libqdb
