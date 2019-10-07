@@ -31,6 +31,8 @@ SOURCES += \
 
 INCLUDEPATH += $$PWD/../
 
+LIBS += -L$$[QT_INSTALL_LIBS]
+
 unix {
     LIBS += -L$$OUT_PWD/../libqdb -lqdb
 }
