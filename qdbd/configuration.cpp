@@ -45,9 +45,9 @@ QString Configuration::networkScript()
     return s_networkScript;
 }
 
-QString Configuration::rndisFunctionName()
+QString Configuration::usbEthernetFunctionName()
 {
-    return s_rndisFunctionName;
+    return s_usbEthernetFunctionName;
 }
 
 QString Configuration::udcDriverDir()
@@ -70,13 +70,13 @@ void Configuration::setNetworkScript(const QString &script)
     s_networkScript = script;
 }
 
-void Configuration::setRndisFunctionName(const QString &name)
+void Configuration::setUsbEthernetFunctionName(const QString &name)
 {
-    s_rndisFunctionName = name;
+    s_usbEthernetFunctionName = name;
 }
 
 QString Configuration::s_functionFsDir = "/dev/usb-ffs/qdb";
 QString Configuration::s_gadgetConfigFsDir = "/sys/kernel/config/usb_gadget/g1";
-QString Configuration::s_rndisFunctionName = "rndis.usb0";
+QString Configuration::s_usbEthernetFunctionName = "rndis.usb0";
 QString Configuration::s_networkScript = "b2qt-gadget-network.sh";
 QString Configuration::s_udcDriverDir = "/sys/class/udc/";

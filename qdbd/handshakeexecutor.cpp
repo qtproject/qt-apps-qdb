@@ -38,16 +38,16 @@
 
 Q_LOGGING_CATEGORY(handshakeC, "qdb.executors.handshake");
 
-QString rndisFunctionPath()
+QString usbEthernetFunctionPath()
 {
-    return Configuration::gadgetConfigFsDir() + "/functions/" + Configuration::rndisFunctionName();
+    return Configuration::gadgetConfigFsDir() + "/functions/" + Configuration::usbEthernetFunctionName();
 }
 
 QString deviceIpAddress()
 {
-    QFile file{rndisFunctionPath() + "/ifname"};
+    QFile file{usbEthernetFunctionPath() + "/ifname"};
     if (!file.open(QIODevice::ReadOnly)) {
-        qCCritical(handshakeC) << "Could not find network interface name from RNDIS configuration at" << rndisFunctionPath();
+        qCCritical(handshakeC) << "Could not find network interface name from Usb Ethernet configuration at" << usbEthernetFunctionPath();
         return "";
     }
 
@@ -77,9 +77,9 @@ QString deviceSerial()
 
 QString hostSideMac()
 {
-    QFile file{rndisFunctionPath() + "/host_addr"};
+    QFile file{usbEthernetFunctionPath() + "/host_addr"};
     if (!file.open(QIODevice::ReadOnly)) {
-        qCCritical(handshakeC) << "Could not find host MAC address from RNDIS configuration at" << rndisFunctionPath();
+        qCCritical(handshakeC) << "Could not find host MAC address from Usb Ethernet configuration at" << usbEthernetFunctionPath();
         return "";
     }
     return QString{file.readAll()}.trimmed();

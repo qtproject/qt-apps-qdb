@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     const QString ffsKey{"ffs-dir"};
     const QString gadgetKey{"gadget-configfs-dir"};
     const QString networkKey{"network-script"};
-    const QString rndisKey{"rndis-function-name"};
+    const QString usbEthernetKey{"usb-ethernet-function-name"};
 
     QCommandLineParser parser;
     parser.addHelpOption();
@@ -60,8 +60,8 @@ int main(int argc, char *argv[])
     parser.addOption({networkKey,
                       "Script to run for controlling the network between host and device",
                       "script"});
-    parser.addOption({rndisKey,
-                      "Name of the Function File System function that provides RNDIS",
+    parser.addOption({usbEthernetKey,
+                      "Name of the Function File System function that provides USB Ethernet",
                       "name"});
     parser.process(app);
 
@@ -71,8 +71,8 @@ int main(int argc, char *argv[])
         Configuration::setGadgetConfigFsDir(parser.value(gadgetKey));
     if (parser.isSet(networkKey))
         Configuration::setNetworkScript(parser.value(networkKey));
-    if (parser.isSet(rndisKey))
-        Configuration::setRndisFunctionName(parser.value(rndisKey));
+    if (parser.isSet(usbEthernetKey))
+        Configuration::setUsbEthernetFunctionName(parser.value(usbEthernetKey));
 
     QString filterRules;
     if (!parser.isSet("debug-transport")) {
