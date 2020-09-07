@@ -32,6 +32,7 @@
 
 #include <QtCore/qdatastream.h>
 #include <QtCore/qdebug.h>
+#include <QtCore/QIODevice>
 #include <QtCore/qloggingcategory.h>
 
 Q_LOGGING_CATEGORY(transportC, "qdb.transport");
