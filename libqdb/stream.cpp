@@ -57,7 +57,7 @@ bool Stream::write(const StreamPacket &packet)
     Q_ASSERT(packet.size() > 0); // writing nothing to the stream does not make sense
     QByteArray data = wrapPacket(packet);
     while (data.size() > 0) {
-        const int splitSize = std::min(data.size(), qdbMaxPayloadSize);
+        const int splitSize = qMin(data.size(), qdbMaxPayloadSize);
         m_connection->enqueueMessage(QdbMessage{QdbMessage::Write, m_hostId, m_deviceId,
                                                 data.left(splitSize)});
         data = data.mid(splitSize);
