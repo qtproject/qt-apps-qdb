@@ -119,7 +119,7 @@ void tst_Stream::singleMessagePacket()
                                        QByteArray{"\x00\x00\x00\x02OK", 6}});
 
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(static_cast<int>(spy[0][0].type()), QMetaType::type("StreamPacket"));
+    QCOMPARE(spy[0][0].metaType().id(), QMetaType::fromType<StreamPacket>().id());
     auto packet = spy[0][0].value<StreamPacket>();
     QCOMPARE(packet.buffer(), QByteArray{"OK"});
 }
@@ -135,7 +135,7 @@ void tst_Stream::splitPacket()
                                        QByteArray{"DE"}});
 
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(static_cast<int>(spy[0][0].type()), QMetaType::type("StreamPacket"));
+    QCOMPARE(spy[0][0].metaType().id(), QMetaType::fromType<StreamPacket>().id());
     auto packet = spy[0][0].value<StreamPacket>();
     QCOMPARE(packet.buffer(), QByteArray{"ABCDE"});
 }

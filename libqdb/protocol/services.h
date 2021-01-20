@@ -31,6 +31,7 @@
 
 #include <QtCore/qbytearray.h>
 #include <QtCore/qdatastream.h>
+#include <QtCore/qiodevice.h>
 
 #include <cstdint>
 

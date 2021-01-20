@@ -1,0 +1,8 @@
+version: 2
+
+instructions:
+  Build:
+    - !include "{{qt/qtbase}}/coin_module_build_template_v2.yaml"
+
+  Test:
+    - !include "{{qt/qtbase}}/coin_module_test_template_v3.yaml"

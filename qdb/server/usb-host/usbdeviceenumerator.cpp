@@ -108,7 +108,7 @@ QString getSerialNumber(libusb_device *device, libusb_device_handle *handle)
     }
     // length is the length in bytes and UTF-16 characters consist of two bytes
     Q_ASSERT(length % 2 == 0);
-    serial = QString::fromUtf16(reinterpret_cast<unsigned short*>(buffer), length / 2);
+    serial = QString::fromUtf16(reinterpret_cast<char16_t*>(buffer), length / 2);
     // Strip non-ASCII characters
     serial = QString::fromLatin1(serial.toLatin1());
     serial.remove(QChar{'?'});

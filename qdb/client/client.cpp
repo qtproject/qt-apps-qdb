@@ -238,8 +238,7 @@ void Client::setupSocketAndConnect(Client::ConnectedSlot handleConnection, Clien
 {
     m_socket = make_unique<QLocalSocket>();
     connect(m_socket.get(), &QLocalSocket::connected, this, handleConnection);
-    connect(m_socket.get(), QOverload<QLocalSocket::LocalSocketError>::of(&QLocalSocket::error),
-            this, handleError);
+    connect(m_socket.get(), &QLocalSocket::errorOccurred, this, handleError);
     m_socket->connectToServer(qdbSocketName);
 }
 
