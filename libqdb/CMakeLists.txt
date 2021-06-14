@@ -16,17 +16,17 @@ qt_internal_add_cmake_library(libqdb
         Qt::Core
 )
 
-qt_extend_target(libqdb CONDITION WIN32
+qt_internal_extend_target(libqdb CONDITION WIN32
     SOURCES
         interruptsignalhandler_win.cpp
 )
 
-qt_extend_target(libqdb CONDITION WIN64
+qt_internal_extend_target(libqdb CONDITION WIN64
     SOURCES
         interruptsignalhandler_win.cpp
 )
 
-qt_extend_target(libqdb CONDITION UNIX
+qt_internal_extend_target(libqdb CONDITION UNIX
     SOURCES
         interruptsignalhandler_unix.cpp
 )
