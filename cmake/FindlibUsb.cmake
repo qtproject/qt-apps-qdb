@@ -15,6 +15,10 @@ if (MINGW)
    endif()
 endif()
 
+if (MACOS)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif()
+
 find_library (LIBUSB_LIBRARY
    NAMES libusb libusb-1.0 usb-1.0
    PATHS "/usr/lib" "/usr/local/lib/" "${WINDOWS_LIBUSB_PATH}")
