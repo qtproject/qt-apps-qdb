@@ -1,17 +1,7 @@
 if (MSVC)
-   set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/VS2019/MS64/static")
-
-   # check if we're using something else than 64bit..
-   if (NOT "${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
-      set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/VS2019/MS32/static")
-   endif()
-endif()
-
-if (MINGW)
-   set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/MinGW64/static")
-   # check if we're using something else than 64bit..
-   if (NOT "${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
-      set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/MinGW32/static")
+   set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/x64-windows-static")
+   if (TEST_architecture_arch STREQUAL arm64)
+      set(WINDOWS_LIBUSB_PATH "$ENV{LIBUSB_PATH}/arm64-windows-static")
    endif()
 endif()
 
@@ -21,11 +11,11 @@ endif()
 
 find_library (LIBUSB_LIBRARY
    NAMES libusb libusb-1.0 usb-1.0
-   PATHS "/usr/lib" "/usr/local/lib/" "${WINDOWS_LIBUSB_PATH}")
+   PATHS "/usr/lib" "/usr/local/lib" "${WINDOWS_LIBUSB_PATH}/lib")
 
 find_path (LIBUSB_INCLUDEDIR
    NAMES libusb.h libusb-1.0.h
-   PATHS "/usr/local/include/" "$ENV{LIBUSB_PATH}/include/libusb-1.0"
+   PATHS "/usr/local/include" "${WINDOWS_LIBUSB_PATH}/include"
    PATH_SUFFIXES "include" "libusb" "libusb-1.0")
 
 include(FindPackageHandleStandardArgs)
