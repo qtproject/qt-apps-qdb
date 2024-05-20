@@ -1,4 +1,7 @@
-dependencies:
-  ../../qt/qtbase:
-    ref: 372eaedc5b8c771c46acc4c96e91bbade4ca3624
-    required: true
+product_dependency:
+  ../../qt/qt5:
+    ref: "6.8"
+dependency_source: supermodule
+dependencies: [
+  ../../qt/qtbase
+]
