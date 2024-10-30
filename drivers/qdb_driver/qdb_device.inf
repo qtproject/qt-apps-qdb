@@ -31,12 +31,15 @@ HKR,,,0,%ClassName%
 HKR,,Icon,,-20
 
 [Manufacturer]
-%ProviderName% = libusbDevice_WinUSB,NTx86,NTamd64
+%ProviderName% = libusbDevice_WinUSB,NTx86,NTamd64,NTarm64
 
 [libusbDevice_WinUSB.NTx86]
 %DeviceName% = USB_Install, USB\%VendorID%&%ProductID%&%InterfaceID%
 
 [libusbDevice_WinUSB.NTamd64]
+%DeviceName% = USB_Install, USB\%VendorID%&%ProductID%&%InterfaceID%
+
+[libusbDevice_WinUSB.NTarm64]
 %DeviceName% = USB_Install, USB\%VendorID%&%ProductID%&%InterfaceID%
 
 [USB_Install]
@@ -65,29 +68,3 @@ AddReg=Dev_AddReg
 
 [Dev_AddReg]
 HKR,,DeviceInterfaceGUIDs,0x10000,%DeviceGUID%
-
-[USB_Install.CoInstallers]
-AddReg=CoInstallers_AddReg
-CopyFiles=CoInstallers_CopyFiles
-
-[CoInstallers_AddReg]
-HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01009.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
-
-[CoInstallers_CopyFiles]
-WinUSBCoInstaller2.dll
-WdfCoInstaller01009.dll
-
-[DestinationDirs]
-CoInstallers_CopyFiles=11
-
-[SourceDisksNames]
-1 = %DiskName%,,,\x86
-2 = %DiskName%,,,\amd64
-
-[SourceDisksFiles.x86]
-WinUSBCoInstaller2.dll=1
-WdfCoInstaller01009.dll=1
-
-[SourceDisksFiles.amd64]
-WinUSBCoInstaller2.dll=2
-WdfCoInstaller01009.dll=2

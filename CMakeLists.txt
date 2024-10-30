@@ -42,4 +42,8 @@ if (QT_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt"
     endif()
 endif()
 
+if (WIN32)
+    add_subdirectory(drivers)
+endif()
+
 qt_build_repo_end()

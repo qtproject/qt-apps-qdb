@@ -9,7 +9,7 @@ DriverVer           = 07/21/2008,6.0.6000.16384
 CatalogFile         = rndis_device.cat
 
 [Manufacturer]
-%Microsoft%         = RndisDevices,NTx86,NTamd64,NTia64
+%Microsoft%         = RndisDevices,NTx86,NTamd64,NTia64,NTarm64
 
 [RndisDevices.NTx86]
 %RndisDevice%    = RNDIS.NT.6.0, USB\%VendorID%&%ProductID%&%InterfaceID%
@@ -18,6 +18,9 @@ CatalogFile         = rndis_device.cat
 %RndisDevice%    = RNDIS.NT.6.0, USB\%VendorID%&%ProductID%&%InterfaceID%
 
 [RndisDevices.NTia64]
+%RndisDevice%    = RNDIS.NT.6.0, USB\%VendorID%&%ProductID%&%InterfaceID%
+
+[RndisDevices.NTarm64]
 %RndisDevice%    = RNDIS.NT.6.0, USB\%VendorID%&%ProductID%&%InterfaceID%
 
 [ControlFlags]

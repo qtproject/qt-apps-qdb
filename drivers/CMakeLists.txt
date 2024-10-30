@@ -1,0 +1,9 @@
+qt_install(
+    FILES
+        qdb_driver/qdb_device.inf
+        qdb_driver/qdb_device.cat
+        rndis_driver/rndis_device.inf
+        rndis_driver/rndis_device.cat
+    DESTINATION
+        ${INSTALL_DATADIR}/drivers
+)
