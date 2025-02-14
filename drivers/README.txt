@@ -25,8 +25,8 @@ this README for how to create a test certificate.
 
 Example commands to sign with a test key "Qt.io(Test)" in PrivateCertStore:
 
-signtool sign /v /s PrivateCertStore /n Qt.io(Test) /t http://timestamp.digicert.com/?alg=sha1 qdb_driver\qdb_device.cat
-signtool sign /v /s PrivateCertStore /n Qt.io(Test) /t http://timestamp.digicert.com/?alg=sha1 rndis_driver\rndis_device.cat
+signtool sign /v /s PrivateCertStore /n Qt.io(Test) /fd SHA256 /t http://timestamp.digicert.com/?alg=sha1 qdb_driver\qdb_device.cat
+signtool sign /v /s PrivateCertStore /n Qt.io(Test) /fd SHA256 /t http://timestamp.digicert.com/?alg=sha1 rndis_driver\rndis_device.cat
 
 Signtool can also be used to verify that driver is correctly signed:
 

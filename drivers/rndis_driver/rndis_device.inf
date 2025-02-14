@@ -4,12 +4,13 @@
 Signature           = "$Windows NT$"
 Class               = Net
 ClassGUID           = {4d36e972-e325-11ce-bfc1-08002be10318}
-Provider            = %Microsoft%
-DriverVer           = 07/21/2008,6.0.6000.16384
+Provider            = %Provider%
+DriverVer           = 02/25/2025,6.0.6000.16384
 CatalogFile         = rndis_device.cat
+PnpLockdown         = 1
 
 [Manufacturer]
-%Microsoft%         = RndisDevices,NTx86,NTamd64,NTia64,NTarm64
+%Provider%          = RndisDevices,NTx86,NTamd64,NTia64,NTarm64
 
 [RndisDevices.NTx86]
 %RndisDevice%    = RNDIS.NT.6.0, USB\%VendorID%&%ProductID%&%InterfaceID%
@@ -49,7 +50,7 @@ HKR, NDI\params\RndisProperty, default,    0, " "
 HKR, NDI\params\RndisProperty, optional,   0, "1"
 
 [Strings]
-Microsoft             = "Microsoft Corporation"
+Provider              = "The Qt Company"
 RndisDevice           = "Remote NDIS6 based Device"
 Rndis_Property         = "Optional RNDIS Property"
 
